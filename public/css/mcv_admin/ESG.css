@@ -1,0 +1,358 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #c6d47f;
+  color: #359A15; 
+}
+
+.card, 
+.chart, 
+.sector, 
+.industry {
+  color: #359A15;
+}
+
+.dashboard {
+  padding: 20px;
+}
+
+/* ---------------- HEADER ---------------- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 25px;
+  margin-bottom: 20px;
+  flex-wrap: wrap; 
+}
+
+.card {
+  background: #fff;
+  color: #359A15; 
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: bold;
+  flex: 1;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+.card-T {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 30px;
+  font-weight: bold;
+  flex: 1;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  width:225px;
+  height:50px;
+}
+
+.card-T span {
+  display: block;
+  font-size: 14px;
+  font-weight: normal;
+  color: #359A15;
+  margin-top: 5px;
+}
+
+.img-card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: bold;
+  flex: 1;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  width:225px;
+  height:50px;
+  margin-bottom: 2px;
+}
+
+.img-card img {
+  max-width: 100%;
+  max-height: 65px;
+  object-fit: contain;
+  
+}
+
+/* ---------------- CHARTS ---------------- */
+.charts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+  margin-bottom: 20px;
+}
+
+.chart {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  height: 200px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+/* ---------------- MIDDLE SECTION ---------------- */
+.middle-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 2fr;
+  gap: 25px;
+  align-items: start;
+  margin-bottom: 20px;
+}
+
+/* Sector + filters stacked */
+.sector-block {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Industry + ESG1 stacked */
+.industry-block {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Sector + Industry cards */
+.sector, 
+.industry {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  height: 200px; 
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+/* ESG1 image */
+.esg1 {
+  width: 572.33px;
+  height: 80px; 
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  background-color: #fff;
+}
+
+.esg1 img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  border-radius:10px;
+  margin-top: 7px;
+  margin-left: 60px;
+}
+
+/* Earth image */
+.earth {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.earth img {
+  width: 100%;
+  height: auto;
+  border-radius: 50%;
+}
+
+/* ---------------- FILTERS ---------------- */
+.filters {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap; 
+}
+
+.filters select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  background: #fff url("data:image/svg+xml;utf8,<svg fill='%23359A15' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>")
+    no-repeat right 10px center;
+  background-size: 16px;
+
+  padding: 12px 40px 12px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+
+  flex: 1;
+  height: 80px; 
+  color: #359A15;
+}
+
+
+.filters select option {
+  color: #359A15;
+}
+
+
+.filters select option[disabled] {
+  font-weight: bold;
+  color: #359A15;
+}
+
+/* ---------------- CHART SIZE ---------------- */
+#riskLevelChart {
+  max-width: 180px;
+  max-height: 180px;
+  margin: 0 auto;
+}
+
+.controversy-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+#controversyChart {
+  max-width: 180px;
+  max-height: 180px;
+}
+
+#controversyLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #000;
+  font-size: 14px;
+  font-weight: normal;
+}
+
+#controversyLegend span {
+  display: flex;
+  align-items: center;
+}
+
+#controversyLegend i {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border-radius: 3px;
+}
+
+#riskLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #000;
+  font-size: 14px;
+  font-weight: normal;
+}
+
+#riskLegend span {
+  display: flex;
+  align-items: center;
+}
+
+#riskLegend i {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border-radius: 3px;
+}
+
+.risk-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* ---------------- RESPONSIVE RULES ---------------- */
+@media (max-width: 1200px) {
+  .charts {
+    grid-template-columns: 1fr 1fr; 
+  }
+  .middle-grid {
+    grid-template-columns: 1fr 1fr; 
+    grid-template-rows: auto auto;
+  }
+  .esg1 {
+    width: 100%;
+    height: auto;
+  }
+  .earth{
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .charts {
+    grid-template-columns: 1fr; 
+  }
+  .middle-grid {
+    grid-template-columns: 1fr;
+  }
+  .filters {
+    flex-direction: column;
+  }
+  .filters select {
+    width: 100%;
+  }
+  .esg1 img {
+    margin-left: 0;
+  }
+
+  
+  .earth {
+    display: none;
+  }
+
+  
+  .card,
+  .card-T,
+  .img-card,
+  .chart,
+  .sector,
+  .industry,
+  .esg1 ,
+  .filters,
+  .industry-block,
+  .sector-block{
+    width: 100% !important;
+    height: auto !important;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-T, .img-card {
+    width: 100%;
+    height: auto;
+  }
+  .chart {
+    height: auto;
+  }
+
+
+
+.chart {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.chart canvas {
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+}

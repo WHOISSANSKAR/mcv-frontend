@@ -1,0 +1,333 @@
+// LoginPage.jsx
+import React, { useState, useRef, useEffect } from "react";
+import "./LoginPage.css";
+import {
+  FaCloud,
+  FaFileAlt,
+  FaChartLine,
+  FaShieldAlt,
+  FaUsers,
+  FaCogs,
+  FaArrowLeft,
+  FaArrowRight,
+} from "react-icons/fa";
+import { FaFacebookF, FaInstagram, FaLinkedinIn } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+
+const features = [
+  { title: "Cloud Based", description: "Deployed in a cloud environment, backed up and accessible anytime, anywhere.", icon: <FaCloud /> },
+  { title: "DMM", description: "Efficient document management module for secure storage, retrieval, and sharing.", icon: <FaFileAlt /> },
+  { title: "Analytics", description: "Gain deep insights through smart analytics and dashboards for decision making.", icon: <FaChartLine /> },
+  { title: "Secure", description: "Enterprise-level security with encryption and compliance to keep your data safe.", icon: <FaShieldAlt /> },
+  { title: "Collaboration", description: "Work seamlessly with your team, clients, and stakeholders in one platform.", icon: <FaUsers /> },
+  { title: "Automation", description: "Automate repetitive tasks and workflows to save time and increase efficiency.", icon: <FaCogs /> },
+];
+
+const LoginPage = ({ setIsLoggedIn }) => {
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState(""); // <-- New state for modal error
+  const navigate = useNavigate();
+
+  const scrollRef = useRef(null);
+  const contactRef = useRef(null);
+  const aboutCardsRef = useRef(null);
+
+  const openLoginModal = () => setShowLoginModal(true);
+  const closeLoginModal = () => {
+    setShowLoginModal(false);
+    setLoginError(""); // clear error when modal closes
+  };
+
+  useEffect(() => {
+    const elements = document.querySelectorAll(".scroll-element");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add("show");
+        });
+      },
+      { threshold: 0.1 }
+    );
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const savedLogin = localStorage.getItem("isLoggedIn");
+    if (savedLogin === "true") setIsLoggedIn(true);
+  }, [setIsLoggedIn]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (password.length < 8) {
+      setLoginError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:5000/login/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setIsLoggedIn(true);
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("user", JSON.stringify(data.user));
+        closeLoginModal();
+        if (data.user && data.user.usrlst_role.toLowerCase() === "admin") {
+          window.location.href = "/dashboard";
+        } else if (data.user && data.user.usrlst_role.toLowerCase() === "user") {
+          window.location.href = "/user_dashboard";
+        } else {
+          setLoginError("Login successful, but role unknown.");
+        }
+      } else {
+        setLoginError(data.error || "Invalid username or password");
+      }
+    } catch (err) {
+      console.error("Login failed:", err);
+      setLoginError("Something went wrong. Try again.");
+    }
+  };
+
+  const scrollToContact = () => contactRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollLeft = () => scrollRef.current.scrollBy({ left: -300, behavior: "smooth" });
+  const scrollRight = () => scrollRef.current.scrollBy({ left: 300, behavior: "smooth" });
+
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    const timeout1 = setTimeout(() => container.scrollBy({ left: 50, behavior: "smooth" }), 500);
+    const timeout2 = setTimeout(() => container.scrollBy({ left: -50, behavior: "smooth" }), 2000);
+    return () => {
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+    };
+  }, []);
+
+  useEffect(() => {
+    const cards = aboutCardsRef.current?.querySelectorAll(".about-card");
+    if (!cards || cards.length === 0) return;
+    const section = document.querySelector(".about-us-cards-section");
+    const deltaX = [-1000, -530, -70];
+    const deltaY = 460;
+    const initialRotations = [-25, -5, 10];
+
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const sectionTop = section.offsetTop;
+      const sectionHeight = section.offsetHeight;
+      const viewportHeight = window.innerHeight;
+      const startScroll = sectionTop - viewportHeight;
+      const speedFactor = 0.6;
+      const endScroll = startScroll + (sectionHeight / 2) * speedFactor;
+      let progress = (scrollTop - startScroll) / (endScroll - startScroll);
+      progress = Math.min(Math.max(progress, 0), 1);
+
+      cards.forEach((card, index) => {
+        card.style.transition = "transform 0.5s ease";
+        const rotate = initialRotations[index] * (1 - progress);
+        const translateX = deltaX[index] * progress;
+        const translateY = deltaY * progress;
+        card.style.transform = `translate(${translateX}px, ${translateY}px) scale(1) rotate(${rotate}deg)`;
+      });
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <div className="login-page-container">
+      <div className="login-page">
+        <div className="navbar">
+          <a href="/" className="brand">
+            <img src="/logo_white.png" alt="MyComplianceView Logo" className="logo-img" />
+          </a>
+          <div className="nav-buttons">
+            <button className="button contact" onClick={scrollToContact}>
+              <span className="button-content">
+                <span className="button-text">Request a Demo</span>
+                <span className="button-arrow"><FaArrowRight /></span>
+              </span>
+            </button>
+            <button className="button" onClick={openLoginModal}>
+              <span className="button-content">
+                <span className="button-text">Login</span>
+                <span className="button-arrow"><FaArrowRight /></span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div className="content">
+          <div className="left-section">
+            <h1 className="heading scroll-element">Integrated Compliance Monitoring</h1>
+            <p className="sub-heading scroll-element">
+              MyComplianceView is a Cloud Based solution to monitor all your
+              compliances. These compliances can be Regulatory or Inhouse. It is
+              a multi-user solution with multiple levels of approvals and
+              escalations. It provides automatic alerts so that no compliance is
+              missed.
+            </p>
+          </div>
+          <div className="right-section">
+            <div className="image-wrapper">
+              <img src="/desktop.png" alt="Desktop Preview" className="desktop-img scroll-element" />
+              <img src="/phone.png" alt="Phone Preview" className="phone-img scroll-element" />
+            </div>
+          </div>
+        </div>
+
+        {showLoginModal && (
+          <div className="modal-overlay" onClick={closeLoginModal}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <h2 className="scroll-element">Login</h2>
+              {loginError && <div className="login-error">{loginError}</div>}
+              <form onSubmit={handleSubmit}>
+                <label>Email</label>
+                <input type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <label>Password</label>
+                <input type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+                <div className="modal-options">
+                  <label className="remember-me"><input type="checkbox" /> Remember Me</label>
+                  <a href="#" className="forgot-password">Forgot Password?</a>
+                </div>
+                <button type="submit" className="submit-button">Submit</button>
+              </form>
+              <button className="close-button" onClick={closeLoginModal}>X</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Features Section */}
+      <section className="features-section">
+        <div className="features-header">
+          <h2 className="scroll-element">Features</h2>
+          <div className="feature-arrows">
+            <button onClick={scrollLeft} className="arrow-button"><FaArrowLeft /></button>
+            <button onClick={scrollRight} className="arrow-button"><FaArrowRight /></button>
+          </div>
+        </div>
+
+        <div className="features-container" ref={scrollRef}>
+          {features.map((feature, index) => (
+            <div className="feature-card" key={index}>
+              <div className="feature-icon">{feature.icon}</div>
+              <div className="feature-content">
+                <h3 className="scroll-element">{feature.title}</h3>
+                <p className="scroll-element">{feature.description}</p>
+                <a href="#" className="read-more">Learn more <span className="arrow">›</span></a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section className="about-section" style={{ position: "relative" }}>
+        <h2 className="about-title scroll-element">Our Services</h2>
+        <div className="about-divider"></div>
+        <div className="about-box">
+          <p className="scroll-element">
+            MyComplianceView is a Cloud Based solution to monitor your all
+            compliances. These compliances can be Regulatory or Inhouse. It is a
+            multi-user solution which has multiple levels of approvals and
+            escalations. It provides automatic alerts so that no compliance is
+            missed.
+          </p>
+        </div>
+
+        <div className="floating-about-cards" ref={aboutCardsRef}>
+          <div className="about-card">
+            <img src="/Lawyer.png" alt="Lawyers" />
+            <h3 className="scroll-element">Lawyers</h3>
+          </div>
+          <div className="about-card">
+            <img src="/CA.png" alt="Chartered Accountants" />
+            <h3 className="scroll-element">Chartered Accountants</h3>
+          </div>
+          <div className="about-card">
+            <img src="/engineer.png" alt="Engineers" />
+            <h3 className="scroll-element">Engineers</h3>
+          </div>
+        </div>
+      </section>
+
+      {/* About Us Cards Section */}
+      <section className="about-us-cards-section">
+        <h2 className="about-us-cards-title scroll-element">About Us</h2>
+        <p className="about-us-description scroll-element">
+          We have a team of Lawyers, Chartered Accountants and Technical
+          Experts. This team keeps track of the ever-changing Laws and
+          Regulations announced by the Government so that you can stay updated
+          with compliances.
+        </p>
+      </section>
+
+      {/* Contact Section */}
+     <section className="contact-section" ref={contactRef}>
+  <h2 className="contact-title scroll-element">Request a demo</h2>
+  <div className="contact-divider"></div>
+  <form className="contact-form">
+    <div className="form-row">
+      <div className="form-group">
+        <label htmlFor="name" className="scroll-element" style={{ color: "white" }}>Your Name</label>
+        <input type="text" id="name" required className="scroll-element" />
+      </div>
+      <div className="form-group">
+        <label htmlFor="email" className="scroll-element" style={{ color: "white" }}>Your Email</label>
+        <input type="email" id="email" required className="scroll-element" />
+      </div>
+      <div className="form-group">
+        <label htmlFor="phone" className="scroll-element" style={{ color: "white" }}>Phone Number</label>
+        <input type="tel" id="phone" required className="scroll-element" />
+      </div>
+    </div>
+    <div className="form-group">
+      <label htmlFor="message" className="scroll-element" style={{ color: "white" }}>Query:</label>
+      <textarea id="message" rows="6" required className="scroll-element"></textarea>
+    </div>
+    <button type="submit" className="contact-submit scroll-element">Get a Callback</button>
+  </form>
+</section>
+
+
+      {/* Footer */}
+      <footer className="footer">
+        <div className="footer-top">
+          <div className="footer-sections">
+            <div className="locations">
+              <h4 className="scroll-element">Contact Us</h4>
+              <p className="scroll-element">Do you have any questions?</p>
+              <button className="footer-button" onClick={scrollToContact}>Get in touch</button>
+            </div>
+            <div className="social">
+              <h4 className="scroll-element">Social Media</h4>
+              <p className="scroll-element">Get in touch with us via social media.</p>
+              <div className="social-icons">
+                <a href="#"><FaFacebookF /></a>
+                <a href="#"><FaInstagram /></a>
+                <a href="#"><FaLinkedinIn /></a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="footer-bottom">
+          <p>© 2025 MyComplianceView. <a href="https://mycomplianceview.com/tns">Terms of service</a></p>
+          <small>* We have a team of Lawyers, Chartered Accountants and Technical Experts. This team keeps track of the ever-changing Laws and Regulations announced by the Government so that you can stay updated with compliances.</small>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default LoginPage;
