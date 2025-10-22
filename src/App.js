@@ -21,6 +21,7 @@ import Approved from "./Approved";
 import Compliance from "./Compliance";
 import ESGDashboard from "./ESGDashboard";
 import UserDashboard from "./UserDashboard";
+import CompanyForm from "./usergroupform";
 
 // App.js — Correct imports (exact filenames)
 import AddStatutory from "./add-statutory";
@@ -92,6 +93,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+       <Route
+  path="/user_group"
+  element={
+    <ProtectedRoute roles={["admin"]}>
+      <CompanyForm />
+    </ProtectedRoute>
+  }
+/>
         <Route
           path="/edit-user"
           element={

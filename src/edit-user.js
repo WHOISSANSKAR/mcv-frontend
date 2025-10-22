@@ -22,6 +22,8 @@ export default function EditUser() {
   const [deptFocused, setDeptFocused] = useState(false);
   const [unitFocused, setUnitFocused] = useState(false);
   const [popup, setPopup] = useState({ visible: false, type: "", value: "" });
+  const [errors, setErrors] = useState({});
+  const [successMsg, setSuccessMsg] = useState("");
 
   const [businessUnits, setBusinessUnits] = useState([]);
   const [filteredBusinessUnits, setFilteredBusinessUnits] = useState([]);
@@ -32,42 +34,42 @@ export default function EditUser() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user.usrlst_id;
 
+  // Admin auth check
+  useEffect(() => {
+    if (!userId || user?.usrlst_role?.toLowerCase() !== "admin") {
+      alert("Access denied. Only admins can edit users.");
+      navigate("/", { replace: true });
+    }
+  }, [navigate, userId, user]);
+
+  // Load clicked user data from localStorage
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem("editUserData") || "{}");
+    if (saved) {
+      setFormData({
+        company: saved.company_name || "",
+        username: saved.name || "",
+        email: saved.email || "",
+        contact: saved.contact || "",
+        escalationEmail: saved.escalation_mail || "",
+        businessUnit: saved.business_unit || "",
+        businessUnitId: saved.business_unit_id || "",
+        department: saved.department || "",
+        departmentId: saved.department_id || "",
+        password: "",
+      });
+    }
+  }, []);
+
   // Fetch business units
   useEffect(() => {
     if (!userId) return;
-
     fetch(`http://localhost:5000/user/business_unit/all?user_id=${userId}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
           setBusinessUnits(data);
           setFilteredBusinessUnits(data);
-
-          const fromAddBU = localStorage.getItem("fromAddBU");
-          const fromAddDept = localStorage.getItem("fromAddDept");
-          const storedBUId = localStorage.getItem("selectedBusinessUnitId");
-
-          if (fromAddBU && data.length > 0) {
-            localStorage.removeItem("fromAddBU");
-            const latestBU = data[0];
-            setFormData((prev) => ({
-              ...prev,
-              businessUnit: latestBU.business_unit_name,
-              businessUnitId: latestBU.usrbu_id,
-            }));
-            localStorage.setItem("selectedBusinessUnitId", latestBU.usrbu_id);
-            fetchDepartments(latestBU.business_unit_name);
-          } else if (fromAddDept && storedBUId && data.length > 0) {
-            const matchedBU = data.find((b) => b.usrbu_id === Number(storedBUId));
-            if (matchedBU) {
-              setFormData((prev) => ({
-                ...prev,
-                businessUnit: matchedBU.business_unit_name,
-                businessUnitId: matchedBU.usrbu_id,
-              }));
-              fetchDepartments(matchedBU.business_unit_name);
-            }
-          }
         }
       })
       .catch((err) => console.error("Error fetching business units:", err));
@@ -76,28 +78,15 @@ export default function EditUser() {
   // Fetch departments for selected BU
   const fetchDepartments = (buName) => {
     if (!userId || !buName) return;
-
     fetch(`http://localhost:5000/user/departments/all?user_id=${userId}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
           const filtered = data
             .filter((d) => d.usrbu_business_unit_name === buName)
-            .sort((a, b) => b.usrdept_id - a.usrdept_id); // newest first
-
+            .sort((a, b) => b.usrdept_id - a.usrdept_id);
           setDepartments(filtered);
           setFilteredDepartments(filtered);
-
-          const fromAddDept = localStorage.getItem("fromAddDept");
-          if (fromAddDept && filtered.length > 0) {
-            localStorage.removeItem("fromAddDept");
-            const latestDept = filtered[0];
-            setFormData((prev) => ({
-              ...prev,
-              department: latestDept.usrdept_department_name,
-              departmentId: latestDept.usrdept_id,
-            }));
-          }
         } else {
           setDepartments([]);
           setFilteredDepartments([]);
@@ -106,22 +95,18 @@ export default function EditUser() {
       .catch((err) => console.error("Error fetching departments:", err));
   };
 
-  // Handle input changes
+  // Input change handler
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (name === "businessUnit") {
-      const filtered = businessUnits.filter((b) =>
-        b.business_unit_name.toLowerCase().includes(value.toLowerCase())
+      setFilteredBusinessUnits(
+        businessUnits.filter((b) =>
+          b.business_unit_name.toLowerCase().includes(value.toLowerCase())
+        )
       );
-      setFilteredBusinessUnits(filtered);
-      setFormData((prev) => ({
-        ...prev,
-        department: "",
-        departmentId: "",
-        businessUnitId: "",
-      }));
+      setFormData((prev) => ({ ...prev, department: "", departmentId: "", businessUnitId: "" }));
       setFilteredDepartments([]);
     }
 
@@ -134,7 +119,7 @@ export default function EditUser() {
     }
   };
 
-  // Handle suggestion click
+  // Suggestion click handler
   const handleSuggestionClick = (name, value) => {
     if (name === "businessUnit") {
       setFormData((prev) => ({
@@ -146,7 +131,6 @@ export default function EditUser() {
       }));
       localStorage.setItem("selectedBusinessUnitId", value.usrbu_id);
       fetchDepartments(value.business_unit_name);
-
       setFilteredBusinessUnits([]);
       setFilteredDepartments([]);
     } else if (name === "department") {
@@ -162,7 +146,7 @@ export default function EditUser() {
 
   // Custom check for new BU/Dept
   const handleCustomCheck = (name) => {
-    const value = formData[name].trim();
+    const value = formData[name]?.trim();
     if (!value) return;
 
     if (name === "businessUnit") {
@@ -182,7 +166,6 @@ export default function EditUser() {
     }
   };
 
-  // Popup handlers
   const handlePopupYes = () => {
     if (popup.type === "businessUnit") {
       localStorage.setItem("customBU", popup.value);
@@ -203,22 +186,26 @@ export default function EditUser() {
     setPopup({ visible: false, type: "", value: "" });
   };
 
-  // Auth check
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    if (!isLoggedIn || user.usrlst_role?.toLowerCase() !== "admin")
-      navigate("/", { replace: true });
-  }, [navigate]);
+  // Focus handlers
+  const handleFocus = (name) => {
+    if (name === "businessUnit") {
+      setUnitFocused(true);
+      if (!formData.businessUnit) setFilteredBusinessUnits(businessUnits);
+    } else if (name === "department") {
+      setDeptFocused(true);
+      if (formData.businessUnit && !formData.department) setFilteredDepartments(departments);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("User updated:", formData);
-    navigate("/");
+    console.log("Edited user data:", formData);
+    navigate("/user");
   };
 
   const handleDelete = () => {
     console.log("User deleted:", formData.username);
-    navigate("/");
+    navigate("/user");
   };
 
   const handleBackup = () => {
@@ -232,26 +219,25 @@ export default function EditUser() {
 
       <div className="form-container">
         <h2>Edit User</h2>
-
         <form onSubmit={handleSubmit} className="add-user-form">
           <label>
             Company Name
-            <input type="text" name="company" value={formData.company} onChange={handleInputChange} required />
+            <input type="text" name="company" value={formData.company} onChange={handleInputChange} onFocus={() => handleFocus("company")} />
           </label>
 
           <label>
             User Name
-            <input type="text" name="username" value={formData.username} onChange={handleInputChange} required />
+            <input type="text" name="username" value={formData.username} onChange={handleInputChange} onFocus={() => handleFocus("username")} />
           </label>
 
           <label>
             E-Mail Address
-            <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
+            <input type="email" name="email" value={formData.email} onChange={handleInputChange} onFocus={() => handleFocus("email")} />
           </label>
 
           <label>
             Contact Number
-            <input type="text" name="contact" value={formData.contact} onChange={handleInputChange} required />
+            <input type="text" name="contact" value={formData.contact} onChange={handleInputChange} onFocus={() => handleFocus("contact")} />
           </label>
 
           {/* Business Unit */}
@@ -263,8 +249,7 @@ export default function EditUser() {
               value={formData.businessUnit}
               onChange={handleInputChange}
               autoComplete="off"
-              required
-              onFocus={() => setUnitFocused(true)}
+              onFocus={() => handleFocus("businessUnit")}
               onBlur={() => {
                 setUnitFocused(false);
                 handleCustomCheck("businessUnit");
@@ -290,10 +275,9 @@ export default function EditUser() {
               value={formData.department}
               onChange={handleInputChange}
               autoComplete="off"
-              required
               disabled={!formData.businessUnit}
-              placeholder={!formData.businessUnit ? "Enter Business Unit first" : ""}
-              onFocus={() => setDeptFocused(true)}
+              placeholder={!formData.businessUnit ? "Select Business Unit first" : ""}
+              onFocus={() => handleFocus("department")}
               onBlur={() => {
                 setDeptFocused(false);
                 handleCustomCheck("department");
@@ -310,14 +294,13 @@ export default function EditUser() {
             )}
           </label>
 
-          <p className="subheading">
-            If not complied in stipulated period, alert will be sent 2 days before the action date.
-          </p>
-
           <label>
-            Escalation Email ID
-            <input type="email" name="escalationEmail" value={formData.escalationEmail} onChange={handleInputChange} />
+            Escalation Email
+            <input type="email" name="escalationEmail" value={formData.escalationEmail} onChange={handleInputChange} onFocus={() => handleFocus("escalationEmail")} />
           </label>
+
+          {errors.api && <div className="login-error">{errors.api}</div>}
+          {successMsg && <div className="success-msg">{successMsg}</div>}
 
           <div className="action-buttons">
             <button type="submit" className="submit-btn">Save Changes</button>
@@ -341,118 +324,26 @@ export default function EditUser() {
             </div>
           </div>
         )}
-         <style>{`
-  .autocomplete { 
-    position: relative; 
-    display: block; 
-    margin-bottom: 1.5rem; 
-  }
-  .autocomplete input { 
-    width: 100%; 
-    padding: 8px; 
-    box-sizing: border-box; 
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    font-size: 1rem;
-  }
-  .suggestions { 
-    position: absolute; 
-    top: 100%; 
-    left: 0; 
-    right: 0; 
-    border: 1px solid #ccc; 
-    border-top: none; 
-    background: white; 
-    list-style: none; 
-    margin: 0; 
-    padding: 0; 
-    max-height: 150px; 
-    overflow-y: auto; 
-    z-index: 1000; 
-  }
-  .suggestions li { 
-    padding: 8px; 
-    cursor: pointer; 
-  }
-  .suggestions li:hover { 
-    background: #f0f0f0; 
-  }
-  label { 
-    position: relative; 
-    font-weight: 500;
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-  .popup-overlay { 
-    position: fixed; 
-    top:0; 
-    left:0; 
-    right:0; 
-    bottom:0; 
-    background: rgba(0,0,0,0.6); 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    z-index: 2000; 
-    animation: fadeIn 0.2s ease-in-out; 
-  }
-  .popup { 
-    background:#fff; 
-    padding: 2rem 2.5rem; 
-    border-radius:12px; 
-    max-width:400px; 
-    width:90%; 
-    text-align:center; 
-    box-shadow:0 10px 25px rgba(0,0,0,0.2); 
-    animation: slideUp 0.25s ease-out; 
-  }
-  .popup p { 
-    font-size:1.1rem; 
-    margin-bottom:1.5rem; 
-    color:#333; 
-  }
-  .popup-buttons { 
-    display:flex; 
-    justify-content:space-between; 
-    gap:1rem; 
-  }
-  .popup-buttons button { 
-    flex:1; 
-    padding:0.6rem 0; 
-    font-size:1rem; 
-    font-weight:500; 
-    border:none; 
-    border-radius:6px; 
-    cursor:pointer; 
-    transition: all 0.2s ease-in-out; 
-  }
-  .popup-yes { 
-    background-color:#4caf50; 
-    color:#fff; 
-  }
-  .popup-yes:hover { 
-    background-color:#43a047; 
-  }
-  .popup-no { 
-    background-color:#f44336; 
-    color:#fff; 
-  }
-  .popup-no:hover { 
-    background-color:#e53935; 
-  }
-  @keyframes fadeIn { 
-    from {opacity:0;} 
-    to {opacity:1;} 
-  }
-  @keyframes slideUp { 
-    from {transform:translateY(20px); opacity:0;} 
-    to {transform:translateY(0); opacity:1;} 
-  }
-  .action-buttons {
-    margin-top: 1rem;
-  }
- 
-`}</style>
+        <style>{`
+          .autocomplete { position: relative; display: block; margin-bottom: 1.5rem; }
+          .autocomplete input { width: 100%; padding: 8px; box-sizing: border-box; border-radius: 6px; border: 1px solid #ccc; font-size: 1rem; }
+          .suggestions { position: absolute; top: 100%; left: 0; right: 0; border: 1px solid #ccc; border-top: none; background: white; list-style: none; margin: 0; padding: 0; max-height: 150px; overflow-y: auto; z-index: 1000; }
+          .suggestions li { padding: 8px; cursor: pointer; }
+          .suggestions li:hover { background: #f0f0f0; }
+          label { position: relative; font-weight: 500; display: block; margin-bottom: 0.5rem; }
+          .popup-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 2000; animation: fadeIn 0.2s ease-in-out; }
+          .popup { background:#fff; padding: 2rem 2.5rem; border-radius:12px; max-width:400px; width:90%; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); animation: slideUp 0.25s ease-out; }
+          .popup p { font-size:1.1rem; margin-bottom:1.5rem; color:#333; }
+          .popup-buttons { display:flex; justify-content:space-between; gap:1rem; }
+          .popup-buttons button { flex:1; padding:0.6rem 0; font-size:1rem; font-weight:500; border:none; border-radius:6px; cursor:pointer; transition: all 0.2s ease-in-out; }
+          .popup-yes { background-color:#4caf50; color:#fff; }
+          .popup-yes:hover { background-color:#43a047; }
+          .popup-no { background-color:#f44336; color:#fff; }
+          .popup-no:hover { background-color:#e53935; }
+          @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+          @keyframes slideUp { from {transform:translateY(20px); opacity:0;} to {transform:translateY(0); opacity:1;} }
+          .action-buttons { margin-top: 1rem; }
+        `}</style>
       </div>
     </div>
   );

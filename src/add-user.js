@@ -1,3 +1,4 @@
+// AddUser.jsx
 import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
@@ -22,7 +23,10 @@ export default function AddUser() {
   const [unitFocused, setUnitFocused] = useState(false);
   const [popup, setPopup] = useState({ visible: false, type: "", value: "" });
   const [errors, setErrors] = useState({});
-  const [successMsg, setSuccessMsg] = useState(""); 
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const [errorVisible, setErrorVisible] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   const [businessUnits, setBusinessUnits] = useState([]);
   const [filteredBusinessUnits, setFilteredBusinessUnits] = useState([]);
@@ -141,6 +145,7 @@ export default function AddUser() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setSuccessMsg("");
+    setErrors({});
     setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (name === "businessUnit") {
@@ -165,8 +170,6 @@ export default function AddUser() {
         )
       );
     }
-
-    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSuggestionClick = (name, value) => {
@@ -246,6 +249,7 @@ export default function AddUser() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSuccessMsg("");
+    setErrors({});
     setPopup({ visible: false, type: "", value: "" });
 
     if (
@@ -273,16 +277,16 @@ export default function AddUser() {
       trimmedData[key] = value != null && typeof value === "string" ? value.trim() : value;
     });
 
-    const newErrors = {};
-    if (!trimmedData.company) newErrors.company = "Company Name is required";
-    if (!trimmedData.username) newErrors.username = "User Name is required";
-    if (!trimmedData.email) newErrors.email = "Email is required";
-    if (!trimmedData.contact) newErrors.contact = "Contact Number is required";
-    if (!trimmedData.businessUnit) newErrors.businessUnit = "Business Unit is required";
-    if (!trimmedData.department) newErrors.department = "Department is required";
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (
+      !trimmedData.company ||
+      !trimmedData.username ||
+      !trimmedData.email ||
+      !trimmedData.contact ||
+      !trimmedData.businessUnit ||
+      !trimmedData.department ||
+      !trimmedData.escalationEmail
+    ) {
+      setErrors({ api: "All fields are required." });
       return;
     }
 
@@ -297,7 +301,7 @@ export default function AddUser() {
         role: "user",
         department: trimmedData.department,
         business_unit: trimmedData.businessUnit,
-        escalation_mail: trimmedData.escalationEmail || "",
+        escalation_mail: trimmedData.escalationEmail,
         company_name: trimmedData.company,
       };
 
@@ -331,29 +335,58 @@ export default function AddUser() {
     }
   };
 
+  // Auto-remove error message with fade-out
+  useEffect(() => {
+    if (errors.api) {
+      setErrorVisible(true);
+      const timer = setTimeout(() => setErrorVisible(false), 4500);
+      const removeTimer = setTimeout(() => setErrors({}), 5000);
+      return () => { clearTimeout(timer); clearTimeout(removeTimer); };
+    }
+  }, [errors.api]);
+
+  // Auto-remove success message with fade-out
+  useEffect(() => {
+    if (successMsg) {
+      setSuccessVisible(true);
+      const timer = setTimeout(() => setSuccessVisible(false), 4500);
+      const removeTimer = setTimeout(() => setSuccessMsg(""), 5000);
+      return () => { clearTimeout(timer); clearTimeout(removeTimer); };
+    }
+  }, [successMsg]);
+
   return (
     <div className="add-user">
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       <div className="form-container">
         <h2>Add User</h2>
+
+        {/* MESSAGE CONTAINER INSIDE FORM, WIDTH 50% */}
+        <div className="messages-top" style={{ margin: "0 auto 1rem auto", width: "50%" }}>
+          {errors.api && (
+            <div className={`login-error ${!errorVisible ? "fade-out" : ""}`}>{errors.api}</div>
+          )}
+          {successMsg && (
+            <div className={`success-msg ${!successVisible ? "fade-out" : ""}`}>{successMsg}</div>
+          )}
+        </div>
+
         <form onSubmit={handleSubmit} className="add-user-form">
+          {/* All input fields same as before */}
           <label>
             Company Name
             <input type="text" name="company" value={formData.company} onChange={handleInputChange} />
-            {errors.company && <div className="login-error">{errors.company}</div>}
           </label>
 
           <label>
             User Name
             <input type="text" name="username" value={formData.username} onChange={handleInputChange} />
-            {errors.username && <div className="login-error">{errors.username}</div>}
           </label>
 
           <label>
             E-Mail Address
             <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
-            {errors.email && <div className="login-error">{errors.email}</div>}
           </label>
 
           <label>
@@ -367,7 +400,6 @@ export default function AddUser() {
                 setFormData((prev) => ({ ...prev, contact: onlyDigits }));
               }}
             />
-            {errors.contact && <div className="login-error">{errors.contact}</div>}
           </label>
 
           <label className="autocomplete">
@@ -384,14 +416,17 @@ export default function AddUser() {
                 handleCustomCheck("businessUnit");
               }}
             />
-            {errors.businessUnit && <div className="login-error">{errors.businessUnit}</div>}
-            {unitFocused && filteredBusinessUnits.length > 0 && (
+            {unitFocused && (
               <ul className="suggestions">
-                {filteredBusinessUnits.map((unit) => (
-                  <li key={unit.usrbu_id} onMouseDown={() => handleSuggestionClick("businessUnit", unit)}>
-                    {unit.business_unit_name}
-                  </li>
-                ))}
+                {filteredBusinessUnits.length > 0 ? (
+                  filteredBusinessUnits.map((unit) => (
+                    <li key={unit.usrbu_id} onMouseDown={() => handleSuggestionClick("businessUnit", unit)}>
+                      {unit.business_unit_name}
+                    </li>
+                  ))
+                ) : (
+                  <li className="no-suggestions">No Business Unit Found</li>
+                )}
               </ul>
             )}
           </label>
@@ -412,14 +447,17 @@ export default function AddUser() {
                 handleCustomCheck("department");
               }}
             />
-            {errors.department && <div className="login-error">{errors.department}</div>}
-            {deptFocused && filteredDepartments.length > 0 && (
+            {deptFocused && (
               <ul className="suggestions">
-                {filteredDepartments.map((dept) => (
-                  <li key={dept.usrdept_id} onMouseDown={() => handleSuggestionClick("department", dept)}>
-                    {dept.usrdept_department_name}
-                  </li>
-                ))}
+                {filteredDepartments.length > 0 ? (
+                  filteredDepartments.map((dept) => (
+                    <li key={dept.usrdept_id} onMouseDown={() => handleSuggestionClick("department", dept)}>
+                      {dept.usrdept_department_name}
+                    </li>
+                  ))
+                ) : (
+                  <li className="no-suggestions">No Department Found</li>
+                )}
               </ul>
             )}
           </label>
@@ -432,9 +470,6 @@ export default function AddUser() {
             Escalation Email
             <input type="email" name="escalationEmail" value={formData.escalationEmail} onChange={handleInputChange} />
           </label>
-
-          {errors.api && <div className="login-error">{errors.api}</div>}
-          {successMsg && <div className="success-msg">{successMsg}</div>}
 
           <button type="submit" className="submit-btn">
             Add User
@@ -449,39 +484,12 @@ export default function AddUser() {
                 {popup.type === "businessUnit" ? "Business Unit" : "Department"}?
               </p>
               <div className="popup-buttons">
-                <button className="popup-yes" onClick={handlePopupYes}>
-                  Yes
-                </button>
-                <button className="popup-no" onClick={handlePopupNo}>
-                  No
-                </button>
+                <button className="popup-yes" onClick={handlePopupYes}>Yes</button>
+                <button className="popup-no" onClick={handlePopupNo}>No</button>
               </div>
             </div>
           </div>
         )}
-
-        <style>{`
-          .autocomplete { position: relative; display: block; margin-bottom: 1.5rem; }
-          .autocomplete input { width: 100%; padding: 8px; box-sizing: border-box; border-radius: 6px; border: 1px solid #ccc; font-size: 1rem; }
-          .suggestions { position: absolute; top: 100%; left: 0; right: 0; border: 1px solid #ccc; border-top: none; background: white; list-style: none; margin: 0; padding: 0; max-height: 150px; overflow-y: auto; z-index: 1000; }
-          .suggestions li { padding: 8px; cursor: pointer; }
-          .suggestions li:hover { background: #f0f0f0; }
-          label { position: relative; font-weight: 500; display: block; margin-bottom: 0.5rem; }
-
-          
-
-          .popup-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 2000; animation: fadeIn 0.2s ease-in-out; }
-          .popup { background:#fff; padding: 2rem 2.5rem; border-radius:12px; max-width:400px; width:90%; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); animation: slideUp 0.25s ease-out; }
-          .popup p { font-size:1.1rem; margin-bottom:1.5rem; color:#333; }
-          .popup-buttons { display:flex; justify-content:space-between; gap:1rem; }
-          .popup-buttons button { flex:1; padding:0.6rem 0; font-size:1rem; font-weight:500; border:none; border-radius:6px; cursor:pointer; transition: all 0.2s ease-in-out; }
-          .popup-yes { background-color:#4caf50; color:#fff; }
-          .popup-yes:hover { background-color:#43a047; }
-          .popup-no { background-color:#f44336; color:#fff; }
-          .popup-no:hover { background-color:#e53935; }
-          @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
-          @keyframes slideUp { from {transform:translateY(20px); opacity:0;} to {transform:translateY(0); opacity:1;} }
-        `}</style>
       </div>
     </div>
   );

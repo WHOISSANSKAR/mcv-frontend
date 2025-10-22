@@ -1,28 +1,35 @@
-import React, { useState, useMemo,useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { FaSearch, FaPlusCircle, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 
-export default function User() {
+export default function General() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const initialData = Array.from({ length: 35 }, (_, i) => ({
-    department: `Dept ${i + 1}`,
-    name: `User ${i + 1}`,
+    id: i + 1,
     email: `user${i + 1}@mail.com`,
-    company: `Company ${Math.ceil((i + 1) / 5)}`,
-    contact: `+91-99999${i + 100}`,
-    escalation: "kunal@infotech.com",
-    businessUnit: "Unit 1",
+    department: `Dept ${((i % 5) + 1)}`,
+    act: `Act ${i + 10}`,
+    name: `User ${i + 1}`,
+    description: `This is a sample description ${i + 1}`,
+    startDate: `2025-01-${(i % 28) + 1}`,
+    actionDate: `2025-02-${(i % 28) + 1}`,
+    endDate: `2025-03-${(i % 28) + 1}`,
+    originalDate: `2025-04-${(i % 28) + 1}`,
+    status: i % 2 === 0 ? "Pending" : "Approved",
+    approver: `Approver ${((i % 4) + 1)}`,
+    requestDate: `2025-05-${(i % 28) + 1}`,
+    responseDate: `2025-06-${(i % 28) + 1}`,
   }));
 
   const [data] = useState(initialData);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState(""); // <-- single search bar
+  const [searchTerm, setSearchTerm] = useState("");
   const rowsPerPage = 8;
 
   const filteredData = useMemo(() => {
@@ -63,15 +70,17 @@ export default function User() {
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
-useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (!isLoggedIn || user.usrlst_role?.toLowerCase() !== "admin") {
-      navigate("/", { replace: true }); // redirect non-admins to login/home
-    }
-  }, [navigate]);
+
+ useEffect(() => {
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  if (!isLoggedIn) {
+    navigate("/", { replace: true });
+  }
+}, [navigate]);
+
+
   return (
-    <div className="Compliance">
+    <div className="report_">
       <UserSidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       <UserHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
 
@@ -79,15 +88,14 @@ useEffect(() => {
         <div className="compliance-score">Compliance Report</div>
         <div className="rightGroup">
           <div className="buttonGroup">
-           
+            
           </div>
         </div>
       </div>
 
       <div className="table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "45px" }}>
-         
-          
+       
         </div>
 
         <div className="table-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -99,8 +107,6 @@ useEffect(() => {
             />
             <FaSearch className="search-icon" />
           </div>
-          
-         
           <button className="action-btn primary">Export</button>
         </div>
       </div>
@@ -108,32 +114,40 @@ useEffect(() => {
       <table className="data-table">
         <thead>
           <tr>
+            <th onClick={() => requestSort("id")}>Id {getSortIcon("id")}</th>
+            <th onClick={() => requestSort("email")}>Email {getSortIcon("email")}</th>
             <th onClick={() => requestSort("department")}>Department {getSortIcon("department")}</th>
+            <th onClick={() => requestSort("act")}>Act {getSortIcon("act")}</th>
             <th onClick={() => requestSort("name")}>Name {getSortIcon("name")}</th>
-            <th onClick={() => requestSort("email")}>E-mail {getSortIcon("email")}</th>
-            <th onClick={() => requestSort("company")}>Company {getSortIcon("company")}</th>
-            <th onClick={() => requestSort("contact")}>Contact {getSortIcon("contact")}</th>
-            <th>Escalation E-mail</th>
-            <th>Business Unit</th>
-            <th>Action</th>
+            <th>Description</th>
+            <th>Start Date</th>
+            <th>Action Date</th>
+            <th>End Date</th>
+            <th>Original Date</th>
+            <th>Status</th>
+            <th>Approver</th>
+            <th>Request Date</th>
+            <th>Response Date</th>
           </tr>
         </thead>
 
         <tbody>
           {currentRows.map((row, index) => (
             <tr key={index}>
-              <td><b>{row.department}</b></td>
-              <td>{row.name}</td>
-              <td>{row.email}</td>
-              <td>{row.company}</td>
-              <td>{row.contact}</td>
-              <td>{row.escalation}</td>
-              <td>{row.businessUnit}</td>
-              <td>
-                <button className="edit-btn" onClick={() => navigate("/edit-user")}>
-                  Edit
-                </button>
-              </td>
+              <td><div className="label">Id</div><div className="value">{row.id}</div></td>
+              <td><div className="label">Email</div><div className="value">{row.email}</div></td>
+              <td><div className="label">Department</div><div className="value">{row.department}</div></td>
+              <td><div className="label">Act</div><div className="value">{row.act}</div></td>
+              <td><div className="label">Name</div><div className="value">{row.name}</div></td>
+              <td><div className="label">Description</div><div className="value">{row.description}</div></td>
+              <td><div className="label">Start Date</div><div className="value">{row.startDate}</div></td>
+              <td><div className="label">Action Date</div><div className="value">{row.actionDate}</div></td>
+              <td><div className="label">End Date</div><div className="value">{row.endDate}</div></td>
+              <td><div className="label">Original Date</div><div className="value">{row.originalDate}</div></td>
+              <td><div className="label">Status</div><div className="value">{row.status}</div></td>
+              <td><div className="label">Approver</div><div className="value">{row.approver}</div></td>
+              <td><div className="label">Request Date</div><div className="value">{row.requestDate}</div></td>
+              <td><div className="label">Response Date</div><div className="value">{row.responseDate}</div></td>
             </tr>
           ))}
         </tbody>

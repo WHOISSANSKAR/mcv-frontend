@@ -48,24 +48,27 @@ export default function User() {
 
         const result = await response.json();
 
-        if (result.error || result.message) {
-          setErrorMsg(result.error || result.message);
-        } else {
-          // Map each row tuple to object for frontend usage
+        if (!result || result.error || result.message === "No departments found") {
+          setErrorMsg("No Departments found.");
+          setDepartments([]);
+        } else if (Array.isArray(result) && result.length > 0) {
           const formatted = result.map((row) => ({
-  department_id: row.usrdept_id,
-  department_name: row.usrdept_department_name || "N/A",
-  business_unit_name: row.usrbu_business_unit_name || "N/A",
-  user_name: row.user_name || "Unknown User", // <-- correct key
-  user_group_id: row.usrdept_user_group_id || "N/A",
-}));
-
-
+            department_id: row.usrdept_id || "N/A",
+            department_name: row.usrdept_department_name || "N/A",
+            business_unit_name: row.usrbu_business_unit_name || "N/A",
+            user_name: row.user_name || "Unknown User",
+            user_group_id: row.usrdept_user_group_id || "N/A",
+          }));
           setDepartments(formatted);
+          setErrorMsg("");
+        } else {
+          setErrorMsg("No Departments found.");
+          setDepartments([]);
         }
       } catch (err) {
         console.error("Fetch error:", err);
-        setErrorMsg("Failed to load departments. Please try again.");
+        setErrorMsg("No Departments found.");
+        setDepartments([]);
       } finally {
         setLoading(false);
       }
@@ -74,18 +77,9 @@ export default function User() {
     fetchDepartments();
   }, [navigate]);
 
-  // Safe search filter
-  const filteredData = departments.filter(
-    (item) =>
-      (item.department_name || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (item.business_unit_name || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (item.user_name || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+  // 🔹 Filter only by department name
+  const filteredData = departments.filter((item) =>
+    (item.department_name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const currentRows = filteredData.slice(indexOfFirstRow, indexOfLastRow);
@@ -129,14 +123,20 @@ export default function User() {
         <div className="table-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div className="search-box">
             <input
-              placeholder="Search by Department, BU, or User"
+              placeholder="Search by Department"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             <FaSearch className="search-icon" />
           </div>
+          <button
+  className="action-btn primary"
+  onClick={() => navigate("/add-department")}
+>
+  Add Dept
+</button>
 
-         
+
           <button className="action-btn primary">Export</button>
         </div>
       </div>

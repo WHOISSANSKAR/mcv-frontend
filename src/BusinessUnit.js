@@ -47,10 +47,10 @@ export default function BusinessUnit() {
 
         const result = await res.json();
 
-        if (result.error || result.message) {
-          setErrorMsg(result.error || result.message);
-        } else if (Array.isArray(result)) {
-          // Map backend response correctly
+        if (!result || result.error || result.message === "No business units found") {
+          setErrorMsg("No Business Units found.");
+          setData([]);
+        } else if (Array.isArray(result) && result.length > 0) {
           const mapped = result.map((row) => ({
             businessUnitId: row.usrbu_id || "N/A",
             businessUnitName: row.business_unit_name || "N/A",
@@ -58,12 +58,15 @@ export default function BusinessUnit() {
             groupId: row.user_group_id || "N/A",
           }));
           setData(mapped);
+          setErrorMsg("");
         } else {
-          setErrorMsg("Invalid response from server");
+          setErrorMsg("No Business Units found.");
+          setData([]);
         }
       } catch (err) {
         console.error(err);
-        setErrorMsg("Failed to load business units. Please try again.");
+        setErrorMsg("No Business Units found.");
+        setData([]);
       } finally {
         setLoading(false);
       }
@@ -72,13 +75,9 @@ export default function BusinessUnit() {
     fetchData();
   }, [navigate]);
 
-  // Safe filtering to prevent undefined errors
-  const filteredData = data.filter(
-    (row) =>
-      (row.businessUnitName || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (row.userName || "").toLowerCase().includes(searchTerm.toLowerCase())
+  // 🔹 Filter only by Business Unit Name
+  const filteredData = data.filter((row) =>
+    (row.businessUnitName || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const currentRows = filteredData.slice(indexOfFirstRow, indexOfLastRow);
@@ -118,14 +117,20 @@ export default function BusinessUnit() {
         <div className="table-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div className="search-box">
             <input
-              placeholder="Search by Name or User"
+              placeholder="Search by Business Unit"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             <FaSearch className="search-icon" />
           </div>
+          <button
+  className="action-btn primary"
+  onClick={() => navigate("/add-bu")}
+>
+  Add Unit
+</button>
 
-         
+
           <button className="action-btn primary">Export</button>
         </div>
       </div>
