@@ -373,11 +373,11 @@ export default function AddUser() {
         </div>
 
         <form onSubmit={handleSubmit} className="add-user-form">
-          {/* All input fields same as before */}
+          {/* All input fields same as before 
           <label>
             Company Name
             <input type="text" name="company" value={formData.company} onChange={handleInputChange} />
-          </label>
+          </label>*/}
 
           <label>
             User Name

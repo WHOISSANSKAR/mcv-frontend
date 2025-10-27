@@ -1,6 +1,6 @@
 // TermsOfService.js
 import React, { useState } from "react";
-import Header from "./Header";
+import UserHeader from "./UserHeader";
 import UserSidebar from "./UserSidebar";
 
 export default function TermsOfService() {
@@ -49,7 +49,7 @@ Unauthorized Activities and Liabilities
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <UserSidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+        <UserHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
         <div
           style={{
             flex: 1,

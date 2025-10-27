@@ -57,7 +57,6 @@ export default function User() {
             department_name: row.usrdept_department_name || "N/A",
             business_unit_name: row.usrbu_business_unit_name || "N/A",
             user_name: row.user_name || "Unknown User",
-            user_group_id: row.usrdept_user_group_id || "N/A",
           }));
           setDepartments(formatted);
           setErrorMsg("");
@@ -130,12 +129,11 @@ export default function User() {
             <FaSearch className="search-icon" />
           </div>
           <button
-  className="action-btn primary"
-  onClick={() => navigate("/add-department")}
->
-  Add Dept
-</button>
-
+            className="action-btn primary"
+            onClick={() => navigate("/add-department")}
+          >
+            Add Dept
+          </button>
 
           <button className="action-btn primary">Export</button>
         </div>
@@ -153,14 +151,13 @@ export default function User() {
                 <th>Department</th>
                 <th>Business Unit</th>
                 <th>User Name</th>
-                <th>User Group ID</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {currentRows.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: "center", padding: "20px" }}>
+                  <td colSpan="4" style={{ textAlign: "center", padding: "20px" }}>
                     No data available
                   </td>
                 </tr>
@@ -170,7 +167,6 @@ export default function User() {
                     <td>{row.department_name}</td>
                     <td>{row.business_unit_name}</td>
                     <td>{row.user_name}</td>
-                    <td>{row.user_group_id}</td>
                     <td>
                       <button className="edit-btn" onClick={() => navigate("/edit-user")}>
                         Edit

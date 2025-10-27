@@ -595,15 +595,25 @@
 .features-arrows button:hover {
   background: #ddd;
 }
+/* ensure page has no unexpected body margin */
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 /* === Cards container === */
 .features-container {
+  width: 100vw;                 /* full viewport width to align with screen edges */
   display: flex;
   gap: 30px;
-  padding: 15px 5rem 15px 2rem; /* left + right balance */
+  padding: 15px 5rem 15px 0;    /* keep right padding if you want space on right; left padding MUST be 0 */
   overflow-x: auto;
-  overflow-y: visible; /* keep hover scaling visible */
+  overflow-y: visible;
   scroll-behavior: smooth;
+
+  scroll-snap-type: x mandatory;     /* snap to left edge */
+  -webkit-overflow-scrolling: touch; /* smooth on iOS */
 
   /* hide scrollbar */
   -ms-overflow-style: none;
@@ -611,85 +621,50 @@
 }
 .features-container::-webkit-scrollbar { display: none; }
 
+/* Make sure there's no implicit start gap coming from pseudo-element — set to 0 */
+.features-container::before { content: ""; flex: 0 0 0; }
+
 /* === Individual cards === */
 .feature-card {
-  position: relative; /* needed for absolute icon */
-  flex: 0 0 350px;
-  min-width: 450px;
+  position: relative;
+  flex: 0 0 auto;
+  width: 450px;
   min-height: 400px;
   background: #fff;
   border-radius: 16px;
   border-top: 5px solid #2563eb;
-  padding: 60px 30px 30px; /* extra top padding for icon */
+  padding: 60px 30px 30px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   transform-origin: center center;
-  margin-top: 10px; /* avoid clipping on hover */
+  margin-top: 10px;
+  scroll-snap-align: start;   /* ensure each card snaps to the left edge */
 }
 
+/* remove any accidental left margin on the first card */
+.features-container > .feature-card:first-child {
+  margin-left: 0;
+  /* if you previously used transform or translate on the first card, remove it */
+}
+
+/* hover and other styles (kept from you) */
 .feature-card:hover {
   transform: translateY(-10px) scale(1.05);
   box-shadow: 0 12px 28px rgba(0,0,0,0.18);
 }
 
-/* === Icon (top-left) === */
-.feature-icon {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  font-size: 7rem;
-  color: #31299f;
-}
+/* rest of your styles unchanged */
+.feature-icon { position: absolute; top: 20px; left: 20px; font-size: 7rem; color: #31299f; }
+.feature-card h3 { font-size: 2rem; margin-bottom: 10px; margin-top: 80px; color: #31299f; }
+.feature-card p { font-size: 1.3rem; color: #555; flex-grow: 1; }
+.read-more { display: inline-flex; align-items: center; gap: 6px; color: #6366f1; font-weight: 600; font-size: 1rem; text-decoration: none; cursor: pointer; transition: color 0.3s ease; }
+.read-more .arrow { transition: transform 0.3s ease; }
+.read-more:hover { color: #6b7280; }
+.read-more:hover .arrow { transform: translateX(6px); }
 
-/* === Card content === */
-.feature-card h3 {
-  font-size: 2rem;
-  margin-bottom: 10px;
-  margin-top: 80px;
-  color: #31299f;
-}
-
-.feature-card p {
-  font-size: 1.3rem;
-  color: #555;
-  flex-grow: 1;
-}
-
-/* === Read more link === */
-.read-more {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #6366f1;
-  font-weight: 600;
-  font-size: 1rem;
-  text-decoration: none;
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-.read-more .arrow {
-  transition: transform 0.3s ease;
-}
-.read-more:hover {
-  color: #6b7280;
-}
-.read-more:hover .arrow {
-  transform: translateX(6px);
-}
-
-/* === Scroll hint animation (optional) === */
-.features-container.scroll-hint {
-  animation: scrollNudge 1.5s ease;
-}
-@keyframes scrollNudge {
-  0%   { transform: translateX(0); }
-  30%  { transform: translateX(-40px); }
-  60%  { transform: translateX(40px); }
-  100% { transform: translateX(0); }
-}
 
 /* === ABOUT SECTION === */
 .about-section {

@@ -220,10 +220,11 @@ export default function EditUser() {
       <div className="form-container">
         <h2>Edit User</h2>
         <form onSubmit={handleSubmit} className="add-user-form">
+          {/*
           <label>
             Company Name
             <input type="text" name="company" value={formData.company} onChange={handleInputChange} onFocus={() => handleFocus("company")} />
-          </label>
+          </label> */}
 
           <label>
             User Name

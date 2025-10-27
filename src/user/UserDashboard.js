@@ -8,7 +8,6 @@ import { FaUsers, FaShieldAlt, FaPen, FaCalendarAlt } from "react-icons/fa"; // 
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
 import "./Dashboard.css";
-import "./ESGDashboard.css"; // for ESG styles
 
 // ---------------- Initial Data ----------------
 const pieTrafficData = [
@@ -52,17 +51,16 @@ export default function Dashboard() {
       <div className="headSection">
         <div></div>
         <div className="rightGroup">
-          <div className="searchBox">
-            <input
-              type="text"
-              placeholder="Can't find something? Search it here!"
-            />
-            <FaSearch className="searchIcon" />
-          </div>
+         <div className="finderBox">
+  <input
+    type="text"
+    placeholder="Can't find something? Search it here!"
+  />
+  <FaSearch className="finderIcon" />
+</div>
+
           <div className="buttonGroup">
-            <button className="headBtn" onClick={() => navigate("/ESG")}>
-              + ESG
-            </button>
+            
           </div>
         </div>
       </div>

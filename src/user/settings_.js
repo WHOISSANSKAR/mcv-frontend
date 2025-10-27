@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import UserSidebar from "./UserSidebar";
-import Header from "./Header";
+import UserHeader from "./UserHeader";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 
@@ -38,7 +38,7 @@ useEffect(() => {
   return (
     <div className="settings_">
       {/* Header at top, full width */}
-      <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      <UserHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
 
       {/* Sidebar can be fixed or overlay */}
       <UserSidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />

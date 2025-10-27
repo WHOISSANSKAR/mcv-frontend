@@ -1,5 +1,5 @@
-// AddStatutory.jsx
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
 import "./Dashboard.css";
@@ -10,6 +10,7 @@ export default function AddStatutory() {
   const [act, setAct] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
 
   const handleFilter = (e) => {
     e.preventDefault();
@@ -20,11 +21,16 @@ export default function AddStatutory() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      setSuccessMsg("✅ Filter applied successfully!");
-      console.log("Filter clicked with:", { country, act });
-      // Add filter logic here
-    } else {
-      setSuccessMsg("");
+      // Get the selected option’s display text (e.g. "EPF ACT")
+      const selectedActText = e.target.act.options[e.target.act.selectedIndex].text;
+
+      // Save exact name to localStorage
+      localStorage.setItem("selectedAct", selectedActText);
+
+      // Redirect to statutory_info
+      setTimeout(() => {
+        navigate("/statutory_info");
+      }, 700);
     }
   };
 
@@ -44,7 +50,6 @@ export default function AddStatutory() {
                 onChange={(e) => setCountry(e.target.value)}
               >
                 <option value="India">India</option>
-                {/* Add more countries if needed */}
               </select>
               {errors.country && <span className="error">{errors.country}</span>}
             </label>
@@ -57,14 +62,21 @@ export default function AddStatutory() {
                 onChange={(e) => setAct(e.target.value)}
               >
                 <option value="">Select</option>
-                <option value="Act 1">Act 1</option>
-                <option value="Act 2">Act 2</option>
-                <option value="Act 3">Act 3</option>
+                <option value="factories">FACTORIES ACT</option>
+                <option value="epf">EPF ACT</option>
+                <option value="esi">ESI ACT</option>
+                <option value="contract_labour">CONTRACT LABOUR ACT</option>
+                <option value="wages">PAYMENT OF WAGES ACT</option>
+                <option value="bonus">PAYMENT OF BONUS ACT</option>
+                <option value="gst">GST ACT</option>
+                <option value="income_tax">INCOME TAX ACT</option>
+                <option value="companies">COMPANIES ACT</option>
+                <option value="fema">FEMA ACT</option>
+                <option value="employment_exchange">EMPLOYMENT EXCHANGE ACT</option>
+                <option value="maternity">MATERNITY BENEFIT ACT</option>
               </select>
               {errors.act && <span className="error">{errors.act}</span>}
             </label>
-
-            {successMsg && <span className="success-msg">{successMsg}</span>}
 
             <label>
               <button type="submit" className="submit-btn">
@@ -73,7 +85,14 @@ export default function AddStatutory() {
             </label>
 
             <label>
-              <a href="/NotFound" style={{ color: "red", textDecoration: "none" , paddingTop: "10px"}}>
+              <a
+                href="/NotFound"
+                style={{
+                  color: "red",
+                  textDecoration: "none",
+                  paddingTop: "10px",
+                }}
+              >
                 Compliance not found?
               </a>
             </label>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import Sidebar from "./Sidebar";
-import Header from "./Header";
+import Sidebar from "./admin/Sidebar";
+import Header from "./admin/Header";
 import { useNavigate } from "react-router-dom";
-import "./Dashboard.css";
+import "./admin/Dashboard.css";
 
 export default function CompanyForm() {
   const [menuOpen, setMenuOpen] = useState(false);

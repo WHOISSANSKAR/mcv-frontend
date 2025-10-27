@@ -3,52 +3,55 @@ import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import LoginPage from "./LoginPage.jsx";
-import Dashboard from "./Dashboard";
-import User from "./user";
-import Activity from "./activity";
-import AddUser from "./add-user";
-import EditUser from "./edit-user";
-import AddBU from "./AddBu";
-import BusinessUnit from "./BusinessUnit";
-import AddDepartment from "./AddDepartment";
-import Department from "./Department";
-import Restore from "./Restore";
-import Settings from "./Settings";
-import Accounts from "./Accounts";
-import General from "./General";
-import Upcoming from "./Upcoming";
-import Approved from "./Approved";
-import Compliance from "./Compliance";
-import ESGDashboard from "./ESGDashboard";
-import UserDashboard from "./UserDashboard";
+import Dashboard from "./admin/Dashboard";
+import User from "./admin/user";
+import Activity from "./admin/activity";
+import AddUser from "./admin/add-user";
+import EditUser from "./admin/edit-user";
+import AddBU from "./admin/AddBu";
+import BusinessUnit from "./admin/BusinessUnit";
+import AddDepartment from "./admin/AddDepartment";
+import Department from "./admin/Department";
+import Restore from "./admin/Restore";
+import Settings from "./admin/Settings";
+import Accounts from "./admin/Accounts";
+import General from "./admin/General";
+import Upcoming from "./admin/Upcoming";
+import Approved from "./admin/Approved";
+import Compliance from "./admin/Compliance";
+import ESGDashboard from "./admin/ESGDashboard";
+import UserDashboard from "./user/UserDashboard";
 import CompanyForm from "./usergroupform";
 
 // App.js — Correct imports (exact filenames)
-import AddStatutory from "./add-statutory";
-import AddSelf from "./add-self";
-import AddDc from "./add-dc";
-import AddGeo from "./add-geo";
-import AddDpdp from "./add-dpdp";
-import AddCyber from "./add-cyber";
-import AddNotices from "./add-notices";
+import AddStatutory from "./user/add-statutory";
+import AddSelf from "./user/add-self";
+import AddDc from "./user/add-dc";
+import AddGeo from "./user/add-geo";
+import AddDpdp from "./user/add-dpdp";
+import AddCyber from "./user/add-cyber";
+import AddNotices from "./user/add-notices";
+import EditCompliance from "./user/edit-compliance.js";
+import StatutoryInfo from "./user/statutory_info.js";
 
-import ManageStatutory from "./manage-statutory";
-import ManageSelf from "./manage-self";
-import ManageDc from "./manage-dc";
-import ManageGeo from "./manage-geo";
-import ManageDpdp from "./manage-dpdp";
-import ManageCyber from "./manage-cyber";
-import ManageNotices from "./manage-notices";
-import NotFound from "./notfound_";
-import General_ from "./general_";
-import Report_ from "./report_";
-import Settings_ from "./settings_";
-import OutOfOffice from "./outofoffice";
-import Tns from "./tns";
-import DPDPAStart from "./DPDPA-start";
-import DPDPAView from "./DPDPA-view";
-import DPDPStart from "./DPDP-start";
-import DPDPView from "./DPDP-view";
+import AddCompliance from "./user/add_compliance.js";
+import ManageStatutory from "./user/manage-statutory";
+import ManageSelf from "./user/manage-self";
+import ManageDc from "./user/manage-dc";
+import ManageGeo from "./user/manage-geo";
+import ManageDpdp from "./user/manage-dpdp";
+import ManageCyber from "./user/manage-cyber";
+import ManageNotices from "./user/manage-notices";
+import NotFound from "./user/notfound_";
+import General_ from "./user/general_";
+import Report_ from "./user/report_";
+import Settings_ from "./user/settings_";
+import OutOfOffice from "./user/outofoffice";
+import Tns from "./user/tns";
+import DPDPAStart from "./user/DPDPA-start";
+import DPDPAView from "./user/DPDPA-view";
+import DPDPStart from "./user/DPDP-start";
+import DPDPView from "./user/DPDP-view";
 
 
 // ProtectedRoute component
@@ -194,7 +197,7 @@ function App() {
         <Route
           path="/ESG"
           element={
-            <ProtectedRoute roles={["user", "admin"]}>
+            <ProtectedRoute roles={[ "admin"]}>
               <ESGDashboard />
             </ProtectedRoute>
           }
@@ -209,6 +212,35 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
+<Route
+  path="/statutory_info"
+  element={
+    <ProtectedRoute roles={["user", "admin"]}>
+      <StatutoryInfo />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/edit-compliance"
+  element={
+    <ProtectedRoute roles={["user", "admin"]}>
+      <EditCompliance />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/add_compliance"
+  element={
+    <ProtectedRoute roles={["user", "admin"]}>
+      <AddCompliance />
+    </ProtectedRoute>
+  }
+/>
+
+
+
        <Route
   path="/notfound"
   element={

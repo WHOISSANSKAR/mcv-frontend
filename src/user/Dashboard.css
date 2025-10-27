@@ -85,6 +85,37 @@ body {
   cursor: pointer;
 }
 
+/* Finder Box (updated) */
+.finderBox {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff; /* white background */
+  border: 1.5px solid #000000; /* black border */
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  color: #000000;
+  width: 400px; /* increased width */
+  height: 30px;
+  margin-right: -30px; /* shifted to the right */
+}
+
+.finderBox input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #000000;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.finderIcon {
+  margin-left: 0.5rem;
+  font-size: 1rem;
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+}
+
+
 /* Buttons */
 .headBtn {
   display: flex;
@@ -1773,111 +1804,102 @@ body {
   }
 }
 /*user*/
-.stats {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-top: 25px;
-}
-
+/* ===================== STATS WRAPPER ===================== */
+stats { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-top: 25px; }
+/* ===================== STAT BOX ===================== */
 .stat-box {
-  background-color: white; /* was #0e1323 */
-  color: black; /* was white */
-  padding: 20px;
-  border-radius: 15px;
-  flex: 1;
-  min-width: 250px;
-  max-width: 300px;
+  background: #ffffff;
+  color: #1a1a1a;
+  border-radius: 20px;
+  padding: 25px 30px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 15px;
+  gap: 25px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  transition: all 0.25s ease;
   height: 150px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* added shadow */
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid #e5e7eb;
 }
 
 .stat-box:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3); /* stronger shadow on hover */
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
 }
 
+/* ===================== ICON ===================== */
 .stat-box .icon {
-  font-size: 40px;
-  background: rgb(255, 255, 255); /* was #1a2035 */
-  color: rgb(0, 0, 0);
-  padding: 15px;
+  font-size: 34px;
+  background: #f5f6fa;
+  color: #000;
   border-radius: 50%;
+  width: 70px;
+  height: 70px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 60px;
-  min-height: 60px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); /* small icon shadow */
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  border: 2px solid #fff;
+  transition: all 0.3s ease;
 }
 
+
+
+/* ===================== CONTENT ===================== */
 .stat-box .content {
-  text-align: right;
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: flex-end;
+  text-align: right;
 }
 
 .stat-box .label {
   font-size: 18px;
-  margin-bottom: 0;
-  
   font-weight: 600;
-}
-
-.stat-box .label1 {
-  font-size: 18px;
-  margin-top: 10px;
-  margin-left: -70px;
-  text-align: left;
+  color: #1a1744;
   white-space: nowrap;
-  
-  font-weight: 600;
-}
-
-.stat-box .value,
-.stat-box .value1 {
-  background: rgb(255, 255, 255); /* was white */
-  color: rgb(0, 0, 0); /* was black */
-  font-weight: bold;
-  border-radius: 10px;
-  padding: 5px 20px;
-  display: block;
-  margin-top: 5px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* small value shadow */
 }
 
 .stat-box .value {
-  font-size: 25px;
-}
-
-.stat-box .value1 {
-  font-size: 15px;
+  font-size: 22px;
+  font-weight: 700;
+  background: #ffffff;
+  color: #000;
+  border-radius: 10px;
+  padding: 6px 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   white-space: nowrap;
-  margin-left: -70px;
 }
 
-/* ===================== MOBILE ===================== */
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 1200px) {
+  .stat-box {
+    max-width: 350px;
+  }
+}
+
+@media (max-width: 992px) {
+  .stats {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .stats {
-    flex-direction: column;
-    gap: 15px;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    width: 95%;
   }
 
   .stat-box {
-    flex: 1 1 100%;
     max-width: 100%;
-    min-width: unset;
-    width: 100%;
   }
 }
+
 /* Sidebar container */ .sidebar, .hamburger-menu { width: 250px; height: 100vh; overflow: visible; /* allow dropdowns to overflow */ position: fixed; left: -250px; top: 0; transition: left 0.3s; z-index: 1000; background: #ffffff; /* original sidebar color */ color: rgb(0, 0, 0); } .hamburger-menu.open { left: 0; } .menu-header { padding: 20px; font-size: 20px; font-weight: bold; border-bottom: 1px solid rgba(255, 255, 255, 0.2); } ul { list-style: none; padding: 0; margin: 0; } .nav-item { padding: 12px 20px; cursor: pointer; position: relative; white-space: nowrap; } .nav-item:hover { background-color: #a6a9b0; color: #fff;/* original hover color */ } /* Main dropdown */ .nav-item.has-dropdown > .dropdown-content { display: none; position: absolute; top: 100%; /* below main nav-item */ left: 0; width: 100%; /* same width as parent nav-item */ background: #c0c0c0; ; /* original dropdown color */ flex-direction: column; z-index: 1000; } .nav-item.has-dropdown:hover > .dropdown-content { display: flex; } /* Sub-dropdown */ .sub-dropdown { position: relative; } .sub-dropdown > .sub-dropdown-content { display: none; position: absolute; top: 0; /* align with parent dropdown item */ left: 100%; /* appear to the right of parent dropdown */ min-width: 100%; /* same width as parent dropdown item */ background: #c0c0c0; /* original sub-dropdown color */ border-radius: 8px; /* rounded corners */ flex-direction: column; z-index: 1000; } .sub-dropdown:hover > .sub-dropdown-content { display: flex; } /* Dropdown items */ .dropdown-content li, .sub-dropdown-content li { padding: 10px 20px; cursor: pointer; white-space: nowrap; } .dropdown-content li:hover, .sub-dropdown-content li:hover { background: #a6a9b0; /* original hover for items */ } /* Optional: arrow indicators */ .nav-item.has-dropdown > span::after { content: "▼"; float: right; font-size: 12px; margin-left: 5px; } .sub-dropdown > span::after { content: "▶"; float: right; font-size: 12px; margin-left: 5px; } /* Allow dropdowns to overflow sidebar */ .hamburger-menu, .sidebar { overflow: visible; }
 
 .login-error {

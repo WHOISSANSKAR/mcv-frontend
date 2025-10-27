@@ -55,7 +55,6 @@ export default function BusinessUnit() {
             businessUnitId: row.usrbu_id || "N/A",
             businessUnitName: row.business_unit_name || "N/A",
             userName: row.user_name || "Unknown User",
-            groupId: row.user_group_id || "N/A",
           }));
           setData(mapped);
           setErrorMsg("");
@@ -124,12 +123,11 @@ export default function BusinessUnit() {
             <FaSearch className="search-icon" />
           </div>
           <button
-  className="action-btn primary"
-  onClick={() => navigate("/add-bu")}
->
-  Add Unit
-</button>
-
+            className="action-btn primary"
+            onClick={() => navigate("/add-bu")}
+          >
+            Add Unit
+          </button>
 
           <button className="action-btn primary">Export</button>
         </div>
@@ -147,14 +145,13 @@ export default function BusinessUnit() {
                 <th>Business Unit ID</th>
                 <th>Business Unit Name</th>
                 <th>User Name</th>
-                <th>Group ID</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {currentRows.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: "center", padding: "20px" }}>No data available</td>
+                  <td colSpan="4" style={{ textAlign: "center", padding: "20px" }}>No data available</td>
                 </tr>
               ) : (
                 currentRows.map((row, idx) => (
@@ -162,7 +159,6 @@ export default function BusinessUnit() {
                     <td>{row.businessUnitId}</td>
                     <td>{row.businessUnitName}</td>
                     <td>{row.userName}</td>
-                    <td>{row.groupId}</td>
                     <td>
                       <button className="edit-btn" onClick={() => navigate("/edit-user")}>Edit</button>
                     </td>
