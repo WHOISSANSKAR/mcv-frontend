@@ -1,4 +1,3 @@
-// Header.js
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaBars, FaUser } from "react-icons/fa";
@@ -6,9 +5,25 @@ import { FaBars, FaUser } from "react-icons/fa";
 export default function UserHeader({ menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Close dropdown when clicking outside
+  // ✅ Check if logged-in user is admin
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        if (userData.usrlst_role?.toLowerCase() === "admin") {
+          setIsAdmin(true);
+        }
+      } catch (err) {
+        console.error("Error parsing user data:", err);
+      }
+    }
+  }, []);
+
+  // ✅ Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -22,7 +37,10 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
   return (
     <header className="header">
       <div className="header-left">
-        <FaBars className="hamburger-icon" onClick={() => setMenuOpen(!menuOpen)} />
+        <FaBars
+          className="hamburger-icon"
+          onClick={() => setMenuOpen(!menuOpen)}
+        />
 
         {/* Clickable logo */}
         <div
@@ -34,7 +52,11 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
         </div>
       </div>
 
-      <div className="header-actions" style={{ position: "relative" }} ref={dropdownRef}>
+      <div
+        className="header-actions"
+        style={{ position: "relative" }}
+        ref={dropdownRef}
+      >
         {/* User Button */}
         <button
           className="btn user-primary"
@@ -56,9 +78,28 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
               borderRadius: "6px",
               overflow: "hidden",
               zIndex: 1000,
-              minWidth: "120px",
+              minWidth: "140px",
             }}
           >
+            {/* ✅ Show Admin button only if user is admin */}
+            {isAdmin && (
+              <button
+                style={{
+                  display: "block",
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "none",
+                  background: "none",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                }}
+                onClick={() => navigate("/dashboard")}
+              >
+                Admin
+              </button>
+            )}
+
             <button
               style={{
                 display: "block",
@@ -72,6 +113,7 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
               }}
               onClick={() => {
                 localStorage.removeItem("isLoggedIn");
+                localStorage.removeItem("user");
                 window.location.reload();
               }}
             >

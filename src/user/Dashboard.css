@@ -1832,8 +1832,8 @@ stats { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wra
 /* ===================== ICON ===================== */
 .stat-box .icon {
   font-size: 34px;
-  background: #f5f6fa;
-  color: #000;
+  background: #1a1744;
+  color: #ffffff;
   border-radius: 50%;
   width: 70px;
   height: 70px;
@@ -1862,17 +1862,44 @@ stats { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wra
   font-weight: 600;
   color: #1a1744;
   white-space: nowrap;
+  margin-top: -15px;
+}
+.stat-box .label1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1744;
+  white-space: nowrap;
+  margin-top: -15px;
+  margin-right: 10px;
+}
+
+.stat-box .label2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1744;
+  white-space: nowrap;
+  margin-right: 25px;
+  margin-top: -15px;
 }
 
 .stat-box .value {
-  font-size: 22px;
+  font-size: 50px;
   font-weight: 700;
   background: #ffffff;
-  color: #000;
-  border-radius: 10px;
-  padding: 6px 18px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   white-space: nowrap;
+  margin-top: 60px;
+  margin-right: 30px;
+}
+
+
+.stat-box .value1{
+  margin-top: 15px;
+  font-size: 25px;
+  font-weight: 700;
+  background: #ffffff;
+  padding: 6px 18px;
+  white-space: nowrap;
+  margin-top: 60px;
 }
 
 /* ===================== RESPONSIVE ===================== */

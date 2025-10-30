@@ -131,7 +131,7 @@ export default function ComplianceList() {
             />
             <FaSearch className="search-icon" />
           </div>
-          <button className="action-btn primary">Export</button>
+          
         </div>
       </div>
 

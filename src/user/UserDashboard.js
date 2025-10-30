@@ -121,32 +121,32 @@ export default function Dashboard() {
   <div className="stat-box">
     <div className="icon"><FaUsers /></div>
     <div className="content">
-      <div className="label">Department</div>
-      <div className="value">2</div>
+    <div className="value">2</div>
+     <div className="label">Department</div>
     </div>
   </div>
 
   <div className="stat-box">
     <div className="icon"><FaShieldAlt /></div>
     <div className="content">
-      <div className="label">Compliance</div>
-      <div className="value">5</div>
+    <div className="value">5</div>
+    <div className="label">Compliance</div>
     </div>
   </div>
 
   <div className="stat-box">
     <div className="icon"><FaPen /></div>
     <div className="content">
-      <div className="label">Action</div>
-      <div className="value">12</div>
+    <div className="value">12</div>
+    <div className="label2">Action</div>
     </div>
   </div>
 
   <div className="stat-box">
     <div className="icon"><FaCalendarAlt /></div>
     <div className="content">
-      <div className="label1">End of Subscription</div>
-      <div className="value1">02-09-2026</div>
+    <div className="value1">02-09-2026</div>
+    <div className="label1">End of Subscription</div>
     </div>
   </div>
 </section>

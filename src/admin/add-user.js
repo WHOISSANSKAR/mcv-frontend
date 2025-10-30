@@ -1,4 +1,3 @@
-// AddUser.jsx
 import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
@@ -142,16 +141,21 @@ export default function AddUser() {
       .catch((err) => console.error("Error fetching departments:", err));
   };
 
+  // Prevent spaces & trim all inputs dynamically
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    // Prevent spaces-only input
+    if (value.trim() === "" && value !== "") return;
+
     setSuccessMsg("");
     setErrors({});
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const cleanValue = value.replace(/\s{2,}/g, " ").trimStart();
+    setFormData((prev) => ({ ...prev, [name]: cleanValue }));
 
     if (name === "businessUnit") {
       setFilteredBusinessUnits(
         businessUnits.filter((b) =>
-          b.business_unit_name.toLowerCase().includes(value.toLowerCase())
+          b.business_unit_name.toLowerCase().includes(cleanValue.toLowerCase())
         )
       );
       setFormData((prev) => ({
@@ -166,7 +170,7 @@ export default function AddUser() {
     if (name === "department" && formData.businessUnit) {
       setFilteredDepartments(
         departments.filter((d) =>
-          d.usrdept_department_name.toLowerCase().includes(value.toLowerCase())
+          d.usrdept_department_name.toLowerCase().includes(cleanValue.toLowerCase())
         )
       );
     }
@@ -216,17 +220,22 @@ export default function AddUser() {
     }
   };
 
-  const handlePopupYes = () => {
-    if (popup.type === "businessUnit") {
-      localStorage.setItem("customBU", popup.value);
-      localStorage.setItem("fromAddBU", "true");
-      navigate("/add-bu");
-    } else if (popup.type === "department") {
-      localStorage.setItem("customDept", popup.value);
-      localStorage.setItem("fromAddDept", "true");
-      navigate(`/add-department?businessUnitId=${formData.businessUnitId}`);
-    }
-  };
+ const handlePopupYes = () => {
+  if (popup.type === "businessUnit") {
+    localStorage.setItem("customBU", popup.value);
+    localStorage.setItem("fromAddBU", "true");
+    
+    // ✅ Added line: store page=2 before navigating
+    localStorage.setItem("page", "2");
+    
+    navigate("/add-bu");
+  } else if (popup.type === "department") {
+    localStorage.setItem("customDept", popup.value);
+    localStorage.setItem("fromAddDept", "true");
+    navigate(`/add-department?businessUnitId=${formData.businessUnitId}`);
+  }
+};
+
 
   const handlePopupNo = () => {
     if (popup.type === "businessUnit")
@@ -252,42 +261,28 @@ export default function AddUser() {
     setErrors({});
     setPopup({ visible: false, type: "", value: "" });
 
-    if (
-      formData.businessUnit &&
-      !businessUnits.some(
-        (b) => b.business_unit_name.toLowerCase() === formData.businessUnit.toLowerCase()
-      ) &&
-      formData.businessUnitId === ""
-    ) {
-      return setPopup({ visible: true, type: "businessUnit", value: formData.businessUnit });
-    }
-
-    if (
-      formData.department &&
-      !departments.some(
-        (d) => d.usrdept_department_name.toLowerCase() === formData.department.toLowerCase()
-      )
-    ) {
-      return setPopup({ visible: true, type: "department", value: formData.department });
-    }
-
+    // Trim all fields before validation
     const trimmedData = {};
     Object.keys(formData).forEach((key) => {
       const value = formData[key];
       trimmedData[key] = value != null && typeof value === "string" ? value.trim() : value;
     });
 
-    if (
-      !trimmedData.company ||
-      !trimmedData.username ||
-      !trimmedData.email ||
-      !trimmedData.contact ||
-      !trimmedData.businessUnit ||
-      !trimmedData.department ||
-      !trimmedData.escalationEmail
-    ) {
-      setErrors({ api: "All fields are required." });
-      return;
+    // Validation: ensure no blank or spaces-only
+    const requiredFields = [
+      "company",
+      "username",
+      "email",
+      "contact",
+      "businessUnit",
+      "department",
+      "escalationEmail",
+    ];
+    for (const field of requiredFields) {
+      if (!trimmedData[field] || trimmedData[field].length === 0) {
+        setErrors({ api: "All fields are required and cannot be blank or contain only spaces." });
+        return;
+      }
     }
 
     localStorage.removeItem("addUserForm");
@@ -335,23 +330,28 @@ export default function AddUser() {
     }
   };
 
-  // Auto-remove error message with fade-out
+  // Auto fade messages
   useEffect(() => {
     if (errors.api) {
       setErrorVisible(true);
       const timer = setTimeout(() => setErrorVisible(false), 4500);
       const removeTimer = setTimeout(() => setErrors({}), 5000);
-      return () => { clearTimeout(timer); clearTimeout(removeTimer); };
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(removeTimer);
+      };
     }
   }, [errors.api]);
 
-  // Auto-remove success message with fade-out
   useEffect(() => {
     if (successMsg) {
       setSuccessVisible(true);
       const timer = setTimeout(() => setSuccessVisible(false), 4500);
       const removeTimer = setTimeout(() => setSuccessMsg(""), 5000);
-      return () => { clearTimeout(timer); clearTimeout(removeTimer); };
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(removeTimer);
+      };
     }
   }, [successMsg]);
 
@@ -362,7 +362,6 @@ export default function AddUser() {
       <div className="form-container">
         <h2>Add User</h2>
 
-        {/* MESSAGE CONTAINER INSIDE FORM, WIDTH 50% */}
         <div className="messages-top" style={{ margin: "0 auto 1rem auto", width: "50%" }}>
           {errors.api && (
             <div className={`login-error ${!errorVisible ? "fade-out" : ""}`}>{errors.api}</div>
@@ -373,20 +372,34 @@ export default function AddUser() {
         </div>
 
         <form onSubmit={handleSubmit} className="add-user-form">
-          {/* All input fields same as before 
           <label>
             Company Name
-            <input type="text" name="company" value={formData.company} onChange={handleInputChange} />
-          </label>*/}
+            <input
+              type="text"
+              name="company"
+              value={formData.company}
+              onChange={handleInputChange}
+            />
+          </label>
 
           <label>
             User Name
-            <input type="text" name="username" value={formData.username} onChange={handleInputChange} />
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleInputChange}
+            />
           </label>
 
           <label>
             E-Mail Address
-            <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+            />
           </label>
 
           <label>
@@ -420,7 +433,12 @@ export default function AddUser() {
               <ul className="suggestions">
                 {filteredBusinessUnits.length > 0 ? (
                   filteredBusinessUnits.map((unit) => (
-                    <li key={unit.usrbu_id} onMouseDown={() => handleSuggestionClick("businessUnit", unit)}>
+                    <li
+                      key={unit.usrbu_id}
+                      onMouseDown={() =>
+                        handleSuggestionClick("businessUnit", unit)
+                      }
+                    >
                       {unit.business_unit_name}
                     </li>
                   ))
@@ -451,7 +469,12 @@ export default function AddUser() {
               <ul className="suggestions">
                 {filteredDepartments.length > 0 ? (
                   filteredDepartments.map((dept) => (
-                    <li key={dept.usrdept_id} onMouseDown={() => handleSuggestionClick("department", dept)}>
+                    <li
+                      key={dept.usrdept_id}
+                      onMouseDown={() =>
+                        handleSuggestionClick("department", dept)
+                      }
+                    >
                       {dept.usrdept_department_name}
                     </li>
                   ))
@@ -468,7 +491,12 @@ export default function AddUser() {
 
           <label>
             Escalation Email
-            <input type="email" name="escalationEmail" value={formData.escalationEmail} onChange={handleInputChange} />
+            <input
+              type="email"
+              name="escalationEmail"
+              value={formData.escalationEmail}
+              onChange={handleInputChange}
+            />
           </label>
 
           <button type="submit" className="submit-btn">
@@ -484,8 +512,12 @@ export default function AddUser() {
                 {popup.type === "businessUnit" ? "Business Unit" : "Department"}?
               </p>
               <div className="popup-buttons">
-                <button className="popup-yes" onClick={handlePopupYes}>Yes</button>
-                <button className="popup-no" onClick={handlePopupNo}>No</button>
+                <button className="popup-yes" onClick={handlePopupYes}>
+                  Yes
+                </button>
+                <button className="popup-no" onClick={handlePopupNo}>
+                  No
+                </button>
               </div>
             </div>
           </div>

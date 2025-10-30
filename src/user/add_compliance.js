@@ -7,7 +7,7 @@ import "./Dashboard.css";
 export default function AddSelf() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
-    compliance_id: "com202510140001",
+    compliance_id: "",
     compliance_name: "",
     start_date: "",
     end_date: "",

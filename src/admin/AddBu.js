@@ -16,7 +16,12 @@ export default function AddBU() {
   const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
-  // Handle form submission
+  // ✅ Clear any stale markers when AddBU loads
+  useEffect(() => {
+    localStorage.removeItem("fromAddBU");
+  }, []);
+
+  // ✅ Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -31,11 +36,17 @@ export default function AddBU() {
         return;
       }
 
-      // Only send business_unit_name and user_id; backend fetches user_group_id
       const payload = {
-        business_unit_name: buName,
+        business_unit_name: buName.trim(),
         user_id: user.usrlst_id,
       };
+
+      // ✅ Prevent blank or space-only submissions
+      if (!payload.business_unit_name) {
+        setError("Business Unit name cannot be blank.");
+        setLoading(false);
+        return;
+      }
 
       const response = await fetch("http://localhost:5000/user/business_unit/add", {
         method: "POST",
@@ -50,8 +61,24 @@ export default function AddBU() {
       } else {
         console.log("Business Unit added:", data);
         setSuccess("Business Unit added successfully!");
-        localStorage.setItem("fromAddBU", "true");
-        setTimeout(() => navigate("/add-user"), 1000);
+
+        // ✅ Only set fromAddBU = true if page = 2
+        const page = String(localStorage.getItem("page") || "");
+        if (page === "2") {
+          localStorage.setItem("fromAddBU", "true");
+        }
+
+        // ✅ Redirect based on 'page' variable
+        setTimeout(() => {
+          if (page === "1") {
+            navigate("/BusinessUnit");
+          } else if (page === "2") {
+            navigate("/add-user");
+          } else {
+            navigate("/dashboard"); // fallback
+          }
+          localStorage.removeItem("page"); // ✅ Clean up after redirect
+        }, 1000);
       }
     } catch (err) {
       console.error(err);
@@ -61,10 +88,11 @@ export default function AddBU() {
     }
   };
 
-  // Redirect non-admin or not logged-in users
+  // ✅ Redirect non-admin or unauthenticated users
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
     const user = JSON.parse(localStorage.getItem("user") || "{}");
+
     if (!isLoggedIn || user.usrlst_role?.toLowerCase() !== "admin") {
       navigate("/", { replace: true });
     }

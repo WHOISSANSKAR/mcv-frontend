@@ -16,7 +16,7 @@
     300deg,
     #1a1744,
     #4e0562,
-    #2b6cf6,
+    #2b6cf6, 
     #7c3aed,
     #ff4ec8,
     #1a1744
@@ -554,31 +554,7 @@
   font-weight: bold;
   margin: 0;
   text-align: left;
-
-  background: linear-gradient(
-    300deg,
-    #1a1744,
-    #4e0562,
-    #2b6cf6,
-    #7c3aed,
-    #ff4ec8,
-    #1a1744
-  );
-  background-size: 300% 300%;
-  animation: gradient-shift 15s ease infinite;
-
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  color: transparent;
-}
-
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  25% { background-position: 50% 50%; }
-  50% { background-position: 100% 50%; }
-  75% { background-position: 50% 50%; }
-  100% { background-position: 0% 50%; }
+  color: #000000;
 }
 
 /* === Arrow buttons === */
@@ -595,6 +571,7 @@
 .features-arrows button:hover {
   background: #ddd;
 }
+
 /* ensure page has no unexpected body margin */
 html, body {
   margin: 0;
@@ -604,16 +581,16 @@ html, body {
 
 /* === Cards container === */
 .features-container {
-  width: 100vw;                 /* full viewport width to align with screen edges */
+  width: 100vw;
   display: flex;
   gap: 30px;
-  padding: 15px 5rem 15px 0;    /* keep right padding if you want space on right; left padding MUST be 0 */
+  padding: 15px 1rem 15px 0;   /* right gap for last card */
   overflow-x: auto;
   overflow-y: visible;
   scroll-behavior: smooth;
 
-  scroll-snap-type: x mandatory;     /* snap to left edge */
-  -webkit-overflow-scrolling: touch; /* smooth on iOS */
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
 
   /* hide scrollbar */
   -ms-overflow-style: none;
@@ -621,8 +598,11 @@ html, body {
 }
 .features-container::-webkit-scrollbar { display: none; }
 
-/* Make sure there's no implicit start gap coming from pseudo-element — set to 0 */
-.features-container::before { content: ""; flex: 0 0 0; }
+/* Remove pseudo-start gap */
+.features-container::before {
+  content: "";
+  flex: 0 0 0;
+}
 
 /* === Individual cards === */
 .feature-card {
@@ -632,7 +612,7 @@ html, body {
   min-height: 400px;
   background: #fff;
   border-radius: 16px;
-  border-top: 5px solid #2563eb;
+  border-top: 5px solid #0D6EFD;
   padding: 60px 30px 30px;
   display: flex;
   flex-direction: column;
@@ -641,29 +621,73 @@ html, body {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   transform-origin: center center;
   margin-top: 10px;
-  scroll-snap-align: start;   /* ensure each card snaps to the left edge */
+  scroll-snap-align: start;
 }
 
-/* remove any accidental left margin on the first card */
+/* === Ensure first card starts at true left edge === */
 .features-container > .feature-card:first-child {
   margin-left: 0;
-  /* if you previously used transform or translate on the first card, remove it */
 }
 
-/* hover and other styles (kept from you) */
+/* === Give last card 10rem visible space at right end === */
+.features-container > .feature-card:last-child {
+  margin-right: 10rem;
+}
+
+/* Hover styles (unchanged) */
 .feature-card:hover {
   transform: translateY(-10px) scale(1.05);
   box-shadow: 0 12px 28px rgba(0,0,0,0.18);
 }
 
-/* rest of your styles unchanged */
-.feature-icon { position: absolute; top: 20px; left: 20px; font-size: 7rem; color: #31299f; }
-.feature-card h3 { font-size: 2rem; margin-bottom: 10px; margin-top: 80px; color: #31299f; }
-.feature-card p { font-size: 1.3rem; color: #555; flex-grow: 1; }
-.read-more { display: inline-flex; align-items: center; gap: 6px; color: #6366f1; font-weight: 600; font-size: 1rem; text-decoration: none; cursor: pointer; transition: color 0.3s ease; }
+/* Rest untouched */
+.feature-icon {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 7rem;
+  color: #0D6EFD;
+}
+.feature-card h3 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  margin-top: 80px;
+  color: #0D6EFD;
+}
+.feature-card p {
+  font-size: 1.3rem;
+  color: #555;
+  flex-grow: 1;
+}
+.read-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #6366f1;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
 .read-more .arrow { transition: transform 0.3s ease; }
 .read-more:hover { color: #6b7280; }
 .read-more:hover .arrow { transform: translateX(6px); }
+
+.features-scroll-wrapper{
+  margin-left: -14rem;
+}
+
+.features-container {
+  padding-left: 14rem; /* allow scroll area to include left margin space */
+}
+
+.features-container > .feature-card:first-child {
+  margin-left: 14rem;  /* your visible margin */
+  scroll-margin-left: 14rem; /* helps when using arrows or snapping */
+}
+
+
 
 
 /* === ABOUT SECTION === */
@@ -685,52 +709,27 @@ html, body {
   font-size: 2.5rem;    /* Adjust size as needed */
   font-weight: 500;
   letter-spacing: 1px;
-  margin-left: -550px;
-  background: linear-gradient(
-    300deg,
-    #1a1744,
-    #4e0562,
-    #2b6cf6,
-    #7c3aed,
-    #ff4ec8,
-    #1a1744
-  );
-  background-size: 300% 300%;
-  animation: gradient-shift 15s ease infinite;
-
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  color: transparent;
+  margin-left: -780px;
+  color: white;
 }
 
 
 .about-divider {
-  width: 420px;             
-  height: 3px;              
-  background: linear-gradient(
-    300deg,
-    #1a1744,
-    #4e0562,
-    #2b6cf6,
-    #7c3aed,
-    #ff4ec8,
-    #1a1744
-  );
-  background-size: 300% 300%;
-  animation: gradient-shift 15s ease infinite;
-
-  margin-left: 18%;         
+  width: 420px;
+  height: 3px;
+  background: white; /* replaced gradient with solid white */
+  margin-left: 10%;
   margin-bottom: 50px;
-  border-radius: 2px;       
+  border-radius: 2px;
 }
+
 
 
 .about-box {
   border: 3px solid #aaa;
   border-radius: 8px;
   padding: 60px 80px;       /* Inner padding */
-  width: 60%;               /* Cover 70% of screen */
+  width: 40%;               /* Cover 70% of screen */
   max-width: 1400px;        /* Limit maximum width */
   line-height: 1.9;
   font-size: 1.2rem;
@@ -738,30 +737,18 @@ html, body {
   background: rgba(0, 0, 0, 0.65);
   margin-left: 5%;          /* Align box to left with some spacing */
   box-sizing: border-box;   /* Include padding in width */
+  height:400px;
 }
 .about-us-cards-title {
   font-size: 3rem;
   font-weight: bold;
   margin: 0;
   text-align: left;
+  color: black; /* solid black text */
 
-  background: linear-gradient(
-    300deg,
-    #1a1744,
-    #4e0562,
-    #2b6cf6,
-    #7c3aed,
-    #ff4ec8,
-    #1a1744
-  );
-  background-size: 300% 300%;
-  animation: gradient-shift 15s ease infinite;
-
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  color: transparent;
+  /* removed gradient and animation */
 }
+
 
 
 /* Responsive adjustments */
@@ -796,24 +783,9 @@ html, body {
 .contact-title {
   font-size: 3rem;
   margin-bottom: 10px;
-
-  background: linear-gradient(
-    300deg,
-    #1a1744,
-    #4e0562,
-    #2b6cf6,
-    #7c3aed,
-    #ff4ec8,
-    #1a1744
-  );
-  background-size: 300% 300%;
-  animation: gradient-shift 15s ease infinite;
-
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  color: transparent;
+  color: white; /* solid white text */
 }
+
 
 
 .contact-divider {
@@ -910,8 +882,7 @@ html, body {
   font-size: 3rem;
   font-weight: 700;
   text-align: center;
-  margin-top: 300px;
-  margin-bottom: -10px;
+  margin-top: -600px;
   color: black;
 }
 
@@ -939,35 +910,33 @@ html, body {
   position: absolute;
   bottom: 200px;       /* bottom of Our Services */
   right: 135px;        /* right of Our Services */
-  width: 250px;       /* container width */
-  height: 450px;      /* container height */
+  width: 415px;        /* container width */
+  height: 700px;       /* container height */
   pointer-events: none;
 }
 
-/* Individual cards - stacked initially */
+/* Individual cards - frosted glass look */
 .floating-about-cards .about-card {
   position: absolute;
-  width: 320px;
-  height: 365px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  width: 450px;
+  height: 570px;
+  background: rgba(255, 255, 255, 0.15); /* translucent background */
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-                   /* partially visible initially */
-  transform:  rotate(0deg); /* initial scale + rotation */
+  transform-origin: bottom center;
   transition: transform 1.2s ease, opacity 1.2s ease;
   z-index: 10;
-  padding-top: 20px;
-  top: 200px;  /* start lower */
+  padding: 20px;
+  top: 200px;
   left: 0;
-}
-
-.floating-about-cards .about-card {
-  /* Make rotation happen from bottom of the card */
-  transform-origin: bottom center;
+  color: #fff;
 }
 
 /* Initial stacked rotation for visual layering */
@@ -986,24 +955,51 @@ html, body {
   z-index: 1;
 }
 
-
-/* Card images - fill most of card */
+/* Card images - now larger and centered */
 .floating-about-cards .about-card img {
-  width: 300px;         /* fixed width to fit card */
-  height: 380px;        /* fill most of card height */
-  object-fit: cover;    
-  margin-bottom: 0;     
-  border-radius: 12px;  
+  width: 400px;
+  height: 400px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  object-fit: contain;
+  align-self: center;
 }
 
-/* Card headings */
-.floating-about-cards .about-card h3 {
-  font-size: 1.4rem;
+/* White info box for title + description */
+.floating-about-cards .about-card .info-box {
+  background: rgba(205, 203, 203, 0.9);
+  border-radius: 12px;
+  padding: 15px 18px;
+  width: 98%;
+  text-align: left;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Title inside info box */
+.floating-about-cards .about-card .info-box h3 {
+  font-size: 1.3rem;
   font-weight: 600;
-  text-align: center;
-  margin-top: 10px;     
+  margin: 0;
+  margin-bottom: 6px;
   color: #000;
 }
+
+/* Description inside info box */
+.floating-about-cards .about-card .info-box p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #333;
+  margin: 0;
+}
+
+/* Hover effect - subtle scale and focus */
+.floating-about-cards .about-card:hover {
+  transform: scale(1.03) rotate(0deg);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+  z-index: 5;
+  transition: all 0.4s ease;
+}
+
 /* === Responsive adjustments for Features & About Us === */
 @media (max-width: 900px) {
   /* --- Features Section --- */

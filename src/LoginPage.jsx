@@ -139,29 +139,14 @@ const LoginPage = ({ setIsLoggedIn }) => {
   const scrollRight = () =>
     scrollRef.current.scrollBy({ left: 300, behavior: "smooth" });
 
-  useEffect(() => {
-    if (!scrollRef.current) return;
-    const container = scrollRef.current;
-    const timeout1 = setTimeout(
-      () => container.scrollBy({ left: 50, behavior: "smooth" }),
-      500
-    );
-    const timeout2 = setTimeout(
-      () => container.scrollBy({ left: -50, behavior: "smooth" }),
-      2000
-    );
-    return () => {
-      clearTimeout(timeout1);
-      clearTimeout(timeout2);
-    };
-  }, []);
+  
 
   useEffect(() => {
     const cards = aboutCardsRef.current?.querySelectorAll(".about-card");
     if (!cards || cards.length === 0) return;
     const section = document.querySelector(".about-us-cards-section");
-    const deltaX = [-1000, -530, -70];
-    const deltaY = 460;
+    const deltaX = [-930, -440, 50];
+    const deltaY = 830;
     const initialRotations = [-25, -5, 10];
 
     const handleScroll = () => {
@@ -302,34 +287,38 @@ const LoginPage = ({ setIsLoggedIn }) => {
       </div>
 
       {/* Features Section */}
-      <section className="features-section">
-        <div className="features-header">
-          <h2 className="scroll-element">Features</h2>
-          <div className="feature-arrows">
-            <button onClick={scrollLeft} className="arrow-button">
-              <FaArrowLeft />
-            </button>
-            <button onClick={scrollRight} className="arrow-button">
-              <FaArrowRight />
-            </button>
+      {/* === Features Section === */}
+<section className="features-section">
+  <div className="features-header">
+    <h2 className="scroll-element">Features</h2>
+    <div className="feature-arrows">
+      <button onClick={scrollLeft} className="arrow-button">
+        <FaArrowLeft />
+      </button>
+      <button onClick={scrollRight} className="arrow-button">
+        <FaArrowRight />
+      </button>
+    </div>
+  </div>
+
+  <div className="features-scroll-wrapper">
+    <div className="features-container" ref={scrollRef}>
+      {features.map((feature, index) => (
+        <div className="feature-card" key={index}>
+          <div className="feature-icon">{feature.icon}</div>
+          <div className="feature-content">
+            <h3 className="scroll-element">{feature.title}</h3>
+            <p className="scroll-element">{feature.description}</p>
+            <a href="#" className="read-more">
+              Learn more <span className="arrow">›</span>
+            </a>
           </div>
         </div>
-
-        <div className="features-container" ref={scrollRef}>
-          {features.map((feature, index) => (
-            <div className="feature-card" key={index}>
-              <div className="feature-icon">{feature.icon}</div>
-              <div className="feature-content">
-                <h3 className="scroll-element">{feature.title}</h3>
-                <p className="scroll-element">{feature.description}</p>
-                <a href="#" className="read-more">
-                  Learn more <span className="arrow">›</span>
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      ))}
+      
+    </div>
+  </div>
+</section>
 
       {/* About Section */}
       <section className="about-section" style={{ position: "relative" }}>
@@ -346,30 +335,42 @@ const LoginPage = ({ setIsLoggedIn }) => {
         </div>
 
         <div className="floating-about-cards" ref={aboutCardsRef}>
-          <div className="about-card">
-            <img src="/Lawyer.png" alt="Lawyers" />
-            <h3 className="scroll-element">Lawyers</h3>
-          </div>
-          <div className="about-card">
-            <img src="/CA.png" alt="Chartered Accountants" />
-            <h3 className="scroll-element">Chartered Accountants</h3>
-          </div>
-          <div className="about-card">
-            <img src="/engineer.png" alt="Engineers" />
-            <h3 className="scroll-element">Engineers</h3>
-          </div>
-        </div>
+  <div className="about-card">
+    <img src="/Lawyer.png" alt="Lawyers" />
+    <div className="info-box">
+      <h3 className="title">Lawyers</h3>
+      <p>Legal experts ensuring compliance and smooth documentation for your business.</p>
+    </div>
+  </div>
+
+  <div className="about-card">
+    <img src="/CA.png" alt="Chartered Accountants" />
+    <div className="info-box">
+      <h3 className="title">Chartered Accountants</h3>
+      <p>Certified professionals managing audits, accounts, and financial statements.</p>
+    </div>
+  </div>
+
+  <div className="about-card">
+    <img src="/engineer.png" alt="Engineers" />
+    <div className="info-box">
+      <h3 className="title">Engineers</h3>
+      <p>Technical minds designing, building, and innovating efficient solutions.</p>
+    </div>
+  </div>
+</div>
+
       </section>
 
       {/* About Us Cards Section */}
       <section className="about-us-cards-section">
         <h2 className="about-us-cards-title scroll-element">About Us</h2>
-        <p className="about-us-description scroll-element">
+        {/*<p className="about-us-description scroll-element">
           We have a team of Lawyers, Chartered Accountants and Technical Experts.
           This team keeps track of the ever-changing Laws and Regulations
           announced by the Government so that you can stay updated with
           compliances.
-        </p>
+        </p>*/}
       </section>
 
       {/* Contact Section */}

@@ -92,9 +92,10 @@ export default function ManageSelf() {
           </div>
 
           <div style={{ textAlign: "center", marginTop: "25px" }}>
-            <button type="submit" className="submit-btn">
-              Delete All
-            </button>
+           <button type="submit" className="submit-btn" style={{ width: "95%" }}>
+  Delete All
+</button>
+
           </div>
         </main>
       </div>

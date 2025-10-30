@@ -82,6 +82,12 @@ export default function BusinessUnit() {
   const currentRows = filteredData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
 
+  // ✅ Add Unit click handler
+  const handleAddUnit = () => {
+    localStorage.setItem("page", "1");
+    navigate("/add-bu");
+  };
+
   return (
     <div className="Businessunit">
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
@@ -122,11 +128,13 @@ export default function BusinessUnit() {
             />
             <FaSearch className="search-icon" />
           </div>
+
+          {/* ✅ Updated Add Unit button */}
           <button
             className="action-btn primary"
-            onClick={() => navigate("/add-bu")}
+            onClick={handleAddUnit}
           >
-            Add Unit
+            <FaPlusCircle style={{ marginRight: "5px" }} /> Add Unit
           </button>
 
           <button className="action-btn primary">Export</button>
