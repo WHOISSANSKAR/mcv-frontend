@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "./Dashboard.css";
 
 export default function AddDepartment() {
@@ -11,10 +11,18 @@ export default function AddDepartment() {
     if (saved) localStorage.removeItem("customDept");
     return saved;
   });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // ✅ Get BU ID: from URL (Edit User) OR from localStorage (Add User)
+  const queryParams = new URLSearchParams(location.search);
+  const businessUnitId =
+    queryParams.get("businessUnitId") || localStorage.getItem("selectedBU") || "";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,19 +32,24 @@ export default function AddDepartment() {
 
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const businessUnitId = localStorage.getItem("selectedBusinessUnitId");
 
-      if (!user.usrlst_id || !businessUnitId) {
-        setError("User or Business Unit not found. Please login again.");
+      if (!user.usrlst_id) {
+        setError("User not found. Please login again.");
         setLoading(false);
         return;
       }
 
       const payload = {
-        business_unit_id: parseInt(businessUnitId),
-        user_id: parseInt(user.usrlst_id),
-        department_name: departmentName,
+        department_name: departmentName.trim(),
+        business_unit_id: Number(businessUnitId),
+        user_id: Number(user.usrlst_id),
       };
+
+      if (!payload.department_name) {
+        setError("Department name cannot be blank.");
+        setLoading(false);
+        return;
+      }
 
       const response = await fetch("http://localhost:5000/user/departments/add", {
         method: "POST",
@@ -46,20 +59,31 @@ export default function AddDepartment() {
 
       const data = await response.json();
 
-      // Handle API failure messages in styled error div
       if (!response.ok) {
-        setError(data.error || "Failed to add Department. Please try again.");
-      } else if (data && data.status === "error") {
-        setError(data.message || "Failed to add Department.");
+        setError(data.error || "Failed to add department");
       } else {
-        console.log("Department added:", data);
         setSuccess("Department added successfully!");
-        localStorage.setItem("fromAddDept", "true");
-        setTimeout(() => navigate("/add-user"), 1000);
+
+        const page = String(localStorage.getItem("page") || "");
+
+        // Flag to refill dropdown when returning
+        if (page === "2" || page === "3") {
+          localStorage.setItem("fromAddDept", "true");
+        }
+
+        setTimeout(() => {
+          if (page === "1") navigate("/department");
+          else if (page === "2") navigate("/add-user");
+          else if (page === "3") navigate("/edit-user");
+          else navigate("/dashboard");
+
+          localStorage.removeItem("page");
+          localStorage.removeItem("customDept");
+        }, 900);
       }
     } catch (err) {
       console.error(err);
-      setError("An unexpected error occurred. Please try again later.");
+      setError("Failed to add department. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -68,6 +92,7 @@ export default function AddDepartment() {
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
     const user = JSON.parse(localStorage.getItem("user") || "{}");
+
     if (!isLoggedIn || user.usrlst_role?.toLowerCase() !== "admin") {
       navigate("/", { replace: true });
     }

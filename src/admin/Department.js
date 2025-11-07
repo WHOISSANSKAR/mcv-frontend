@@ -139,12 +139,16 @@ export default function User() {
             />
             <FaSearch className="search-icon" />
           </div>
-          <button
-            className="action-btn primary"
-            onClick={() => navigate("/add-department")}
-          >
-            + Add Dept
-          </button>
+         <button
+  className="action-btn primary"
+  onClick={() => {
+    localStorage.setItem("page", "1");   // ✅ Save page=1 before going to Add Dept
+    navigate("/add-department");
+  }}
+>
+  + Add Dept
+</button>
+
 
           <button className="action-btn primary">Export</button>
         </div>

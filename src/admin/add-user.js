@@ -82,36 +82,46 @@ export default function AddUser() {
     return () => window.removeEventListener("beforeunload", clearStorage);
   }, []);
 
-  useEffect(() => {
-    if (!userId) return;
-    fetch(`http://localhost:5000/user/business_unit/all?user_id=${userId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setBusinessUnits(data);
-          setFilteredBusinessUnits(data);
+ useEffect(() => {
+  if (!userId) return;
 
-          const fromAddBU = localStorage.getItem("fromAddBU");
-          const fromAddDept = localStorage.getItem("fromAddDept");
+  fetch(`http://localhost:5000/user/business_unit/all?user_id=${userId}`)
+    .then((res) => res.json())
+    .then((data) => {
+      if (Array.isArray(data)) {
+        setBusinessUnits(data);
+        setFilteredBusinessUnits(data);
 
-          if ((fromAddBU || fromAddDept) && data.length > 0) {
-            localStorage.removeItem("fromAddBU");
-            localStorage.removeItem("fromAddDept");
+        const fromAddBU = localStorage.getItem("fromAddBU");
+        const fromAddDept = localStorage.getItem("fromAddDept");
 
-            const latestBU = data[0];
-            setFormData((prev) => ({
-              ...prev,
-              businessUnit: latestBU.business_unit_name,
-              businessUnitId: latestBU.usrbu_id,
-            }));
-            localStorage.setItem("selectedBusinessUnitId", latestBU.usrbu_id);
+        // ✅ ONLY if user just returned from add BU or add dept
+        if ((fromAddBU || fromAddDept) && data.length > 0) {
 
-            fetchDepartments(latestBU.business_unit_name, fromAddDept);
-          }
+          // ✅ REMOVE ALL TEMP STORAGE IMMEDIATELY
+          localStorage.removeItem("fromAddBU");
+          localStorage.removeItem("fromAddDept");
+          localStorage.removeItem("customBU");
+          localStorage.removeItem("customDept");
+          localStorage.removeItem("selectedBusinessUnitId");
+
+          // ✅ Auto-select the latest BU
+          const latestBU = data[0];
+
+          setFormData((prev) => ({
+            ...prev,
+            businessUnit: latestBU.business_unit_name,
+            businessUnitId: latestBU.usrbu_id,
+          }));
+
+          // ✅ Also fetch departments and auto-select latest dept if needed
+          fetchDepartments(latestBU.business_unit_name, fromAddDept);
         }
-      })
-      .catch((err) => console.error("Error fetching business units:", err));
-  }, [userId]);
+      }
+    })
+    .catch((err) => console.error("Error fetching business units:", err));
+}, [userId]);
+
 
   const fetchDepartments = (buName, autoSelectDept = false) => {
     if (!userId || !buName) return;
@@ -218,18 +228,21 @@ export default function AddUser() {
     }
   };
 
-  const handlePopupYes = () => {
-    if (popup.type === "businessUnit") {
-      localStorage.setItem("customBU", popup.value);
-      localStorage.setItem("fromAddBU", "true");
-      localStorage.setItem("page", "2");
-      navigate("/add-bu");
-    } else if (popup.type === "department") {
-      localStorage.setItem("customDept", popup.value);
-      localStorage.setItem("fromAddDept", "true");
-      navigate(`/add-department?businessUnitId=${formData.businessUnitId}`);
-    }
-  };
+ const handlePopupYes = () => {
+  if (popup.type === "businessUnit") {
+    localStorage.setItem("customBU", popup.value);
+    localStorage.setItem("fromAddBU", "true");
+    localStorage.setItem("page", "2");   // ✅ already present
+    navigate("/add-bu");
+
+  } else if (popup.type === "department") {
+    localStorage.setItem("customDept", popup.value);
+    localStorage.setItem("fromAddDept", "true");
+    localStorage.setItem("page", "2");   // ✅ NEW: added for dept also
+    navigate(`/add-department?businessUnitId=${formData.businessUnitId}`);
+  }
+};
+
 
   const handlePopupNo = () => {
     if (popup.type === "businessUnit")

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
@@ -6,98 +6,148 @@ import "./Dashboard.css";
 
 export default function EditUser() {
   const [menuOpen, setMenuOpen] = useState(false);
+
   const [formData, setFormData] = useState({
-    company: "",
     username: "",
-    department: "",
-    departmentId: "",
     email: "",
     contact: "",
-    password: "",
     escalationEmail: "",
     businessUnit: "",
     businessUnitId: "",
+    department: "",
+    departmentId: "",
   });
+
+  const [originalData, setOriginalData] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
 
   const [deptFocused, setDeptFocused] = useState(false);
   const [unitFocused, setUnitFocused] = useState(false);
-  const [popup, setPopup] = useState({ visible: false, type: "", value: "" });
-  const [errors, setErrors] = useState({});
-  const [successMsg, setSuccessMsg] = useState("");
 
   const [businessUnits, setBusinessUnits] = useState([]);
   const [filteredBusinessUnits, setFilteredBusinessUnits] = useState([]);
+
   const [departments, setDepartments] = useState([]);
   const [filteredDepartments, setFilteredDepartments] = useState([]);
 
+  const [popup, setPopup] = useState({ visible: false, type: "", value: "" });
+
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const userId = user.usrlst_id;
 
-  // Admin auth check
-  useEffect(() => {
-    if (!userId || user?.usrlst_role?.toLowerCase() !== "admin") {
-      alert("Access denied. Only admins can edit users.");
-      navigate("/", { replace: true });
-    }
-  }, [navigate, userId, user]);
+  const admin = useMemo(() => JSON.parse(localStorage.getItem("user") || "{}"), []);
+  const adminId = admin.usrlst_id;
 
-  // Load clicked user data from localStorage
+  const editUserData = useMemo(
+    () => JSON.parse(localStorage.getItem("editUserData") || "{}"),
+    []
+  );
+  const editingUserId = editUserData.usrlst_id || editUserData.id;
+
+  // ✅ restore temp saved form AND sync originalData so Save button works
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("editUserData") || "{}");
-    if (saved) {
-      setFormData({
-        company: saved.company_name || "",
-        username: saved.name || "",
-        email: saved.email || "",
-        contact: saved.contact || "",
-        escalationEmail: saved.escalation_mail || "",
-        businessUnit: saved.business_unit || "",
-        businessUnitId: saved.business_unit_id || "",
-        department: saved.department || "",
-        departmentId: saved.department_id || "",
-        password: "",
-      });
+    const saved = JSON.parse(localStorage.getItem("editUserTempForm") || "{}");
+    if (saved && Object.keys(saved).length > 0) {
+      setFormData(saved);
+      setOriginalData(saved); // ✅ This line fixes the Save button when returning from Add BU/Dept
     }
   }, []);
 
-  // Fetch business units
   useEffect(() => {
-    if (!userId) return;
-    fetch(`http://localhost:5000/user/business_unit/all?user_id=${userId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setBusinessUnits(data);
-          setFilteredBusinessUnits(data);
-        }
-      })
-      .catch((err) => console.error("Error fetching business units:", err));
-  }, [userId]);
+    if (!adminId || admin?.usrlst_role?.toLowerCase() !== "admin") {
+      alert("Access denied");
+      navigate("/", { replace: true });
+    }
+  }, [navigate, adminId, admin]);
 
-  // Fetch departments for selected BU
-  const fetchDepartments = (buName) => {
-    if (!userId || !buName) return;
-    fetch(`http://localhost:5000/user/departments/all?user_id=${userId}`)
+  useEffect(() => {
+    if (editUserData && !localStorage.getItem("editUserTempForm")) {
+      const initial = {
+        username: editUserData.name || "",
+        email: editUserData.email || "",
+        contact: editUserData.contact || "",
+        escalationEmail: editUserData.escalation_mail || "",
+        businessUnit: editUserData.business_unit || "",
+        businessUnitId: editUserData.business_unit_id || "",
+        department: editUserData.department || "",
+        departmentId: editUserData.department_id || "",
+      };
+      setOriginalData(initial);
+      setFormData(initial);
+    }
+  }, [editUserData]);
+
+  useEffect(() => {
+    if (!adminId) return;
+
+    fetch(`http://localhost:5000/user/business_unit/all?user_id=${adminId}`)
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data)) {
-          const filtered = data
-            .filter((d) => d.usrbu_business_unit_name === buName)
-            .sort((a, b) => b.usrdept_id - a.usrdept_id);
-          setDepartments(filtered);
-          setFilteredDepartments(filtered);
-        } else {
-          setDepartments([]);
-          setFilteredDepartments([]);
+        if (!Array.isArray(data)) return;
+        setBusinessUnits(data);
+        setFilteredBusinessUnits(data);
+
+        const fromAddBU = localStorage.getItem("fromAddBU");
+        const fromAddDept = localStorage.getItem("fromAddDept");
+
+        if ((fromAddBU || fromAddDept) && data.length > 0) {
+          localStorage.removeItem("fromAddBU");
+          localStorage.removeItem("fromAddDept");
+          localStorage.removeItem("customBU");
+          localStorage.removeItem("customDept");
+          localStorage.removeItem("selectedBusinessUnitId");
+          localStorage.removeItem("page");
+
+          const latestBU = data[0];
+
+          setFormData((prev) => ({
+            ...prev,
+            businessUnit: latestBU.business_unit_name,
+            businessUnitId: latestBU.usrbu_id,
+            department: "",
+            departmentId: "",
+          }));
+
+          fetchDepartments(latestBU.business_unit_name, !!fromAddDept);
+        } else if (editUserData?.business_unit) {
+          fetchDepartments(editUserData.business_unit, false);
         }
       })
-      .catch((err) => console.error("Error fetching departments:", err));
+      .catch((err) => console.error("BU fetch error:", err));
+  }, [adminId]);
+
+  const fetchDepartments = (buName, autoSelectLatest = false) => {
+    fetch(`http://localhost:5000/user/departments/all?user_id=${adminId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!Array.isArray(data)) return;
+        const filtered = data
+          .filter((d) => d.usrbu_business_unit_name === buName)
+          .sort((a, b) => b.usrdept_id - a.usrdept_id);
+
+        setDepartments(filtered);
+        setFilteredDepartments(filtered);
+
+        if (autoSelectLatest && filtered.length > 0) {
+          const latestDept = filtered[0];
+          setFormData((prev) => ({
+            ...prev,
+            department: latestDept.usrdept_department_name,
+            departmentId: latestDept.usrdept_id,
+          }));
+        }
+      });
   };
 
-  // Input change handler
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name } = e.target;
+    let { value } = e.target;
+
+    if (name === "contact") value = value.replace(/\D/g, "").slice(0, 10);
+    else if (name !== "email" && name !== "escalationEmail")
+      value = value.replace(/\s{2,}/g, " ").replace(/^\s+/, "");
+
     setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (name === "businessUnit") {
@@ -106,7 +156,12 @@ export default function EditUser() {
           b.business_unit_name.toLowerCase().includes(value.toLowerCase())
         )
       );
-      setFormData((prev) => ({ ...prev, department: "", departmentId: "", businessUnitId: "" }));
+      setFormData((prev) => ({
+        ...prev,
+        department: "",
+        departmentId: "",
+        businessUnitId: "",
+      }));
       setFilteredDepartments([]);
     }
 
@@ -119,7 +174,6 @@ export default function EditUser() {
     }
   };
 
-  // Suggestion click handler
   const handleSuggestionClick = (name, value) => {
     if (name === "businessUnit") {
       setFormData((prev) => ({
@@ -129,7 +183,6 @@ export default function EditUser() {
         department: "",
         departmentId: "",
       }));
-      localStorage.setItem("selectedBusinessUnitId", value.usrbu_id);
       fetchDepartments(value.business_unit_name);
       setFilteredBusinessUnits([]);
       setFilteredDepartments([]);
@@ -144,36 +197,38 @@ export default function EditUser() {
     }
   };
 
-  // Custom check for new BU/Dept
-  const handleCustomCheck = (name) => {
-    const value = formData[name]?.trim();
+  const handleCustomCheck = (fieldName) => {
+    const value = formData[fieldName]?.trim();
     if (!value) return;
 
-    if (name === "businessUnit") {
+    if (fieldName === "businessUnit") {
       const exists = businessUnits.some(
         (b) => b.business_unit_name.toLowerCase() === value.toLowerCase()
       );
-      if (!exists && formData.businessUnitId === "") {
-        setPopup({ visible: true, type: "businessUnit", value });
-      }
-    } else if (name === "department") {
+      if (!exists) setPopup({ visible: true, type: "businessUnit", value });
+    }
+
+    if (fieldName === "department") {
       const exists = departments.some(
         (d) => d.usrdept_department_name.toLowerCase() === value.toLowerCase()
       );
-      if (!exists && formData.businessUnit) {
+      if (!exists && formData.businessUnit)
         setPopup({ visible: true, type: "department", value });
-      }
     }
   };
 
   const handlePopupYes = () => {
+    localStorage.setItem("editUserTempForm", JSON.stringify(formData));
+
     if (popup.type === "businessUnit") {
       localStorage.setItem("customBU", popup.value);
       localStorage.setItem("fromAddBU", "true");
+      localStorage.setItem("page", "3");
       navigate("/add-bu");
     } else if (popup.type === "department") {
       localStorage.setItem("customDept", popup.value);
       localStorage.setItem("fromAddDept", "true");
+      localStorage.setItem("page", "3");
       navigate(`/add-department?businessUnitId=${formData.businessUnitId}`);
     }
   };
@@ -181,35 +236,94 @@ export default function EditUser() {
   const handlePopupNo = () => {
     if (popup.type === "businessUnit")
       setFormData((prev) => ({ ...prev, businessUnit: "", businessUnitId: "" }));
-    else if (popup.type === "department")
+    else
       setFormData((prev) => ({ ...prev, department: "", departmentId: "" }));
     setPopup({ visible: false, type: "", value: "" });
   };
 
-  // Focus handlers
-  const handleFocus = (name) => {
-    if (name === "businessUnit") {
-      setUnitFocused(true);
-      if (!formData.businessUnit) setFilteredBusinessUnits(businessUnits);
-    } else if (name === "department") {
-      setDeptFocused(true);
-      if (formData.businessUnit && !formData.department) setFilteredDepartments(departments);
+  // ✅ The ONLY change needed for Save button logic
+  const isSaveEnabled =
+    originalData && JSON.stringify(originalData) !== JSON.stringify(formData);
+
+  const validateNow = () => {
+    const e = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!formData.username.trim()) e.username = "User name is required";
+    if (!formData.email.trim()) e.email = "Email is required";
+    else if (!emailRegex.test(formData.email)) e.email = "Invalid email";
+
+    if (!formData.contact.trim()) e.contact = "Contact required";
+    else if (formData.contact.length !== 10)
+      e.contact = "Contact must be exactly 10 digits";
+
+    if (!formData.businessUnit.trim()) e.businessUnit = "Business Unit required";
+    if (!formData.department.trim()) e.department = "Department required";
+
+    if (!formData.escalationEmail.trim())
+      e.escalationEmail = "Escalation email required";
+    else if (!emailRegex.test(formData.escalationEmail))
+      e.escalationEmail = "Invalid escalation email";
+
+    return e;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+
+    const v = validateNow();
+    setErrors(v);
+    if (Object.keys(v).length > 0) return;
+
+    try {
+      const payload = {
+        name: formData.username,
+        contact: formData.contact,
+        department: formData.department,
+        escalation_mail: formData.escalationEmail,
+      };
+
+      const res = await fetch(
+        `http://localhost:5000/user_update/${editingUserId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        setErrors({ api: result.error || "Failed to update user" });
+        return;
+      }
+
+      setSuccessMsg("✅ User updated successfully!");
+
+      localStorage.removeItem("editUserTempForm");
+      localStorage.removeItem("fromAddBU");
+      localStorage.removeItem("fromAddDept");
+      localStorage.removeItem("customBU");
+      localStorage.removeItem("customDept");
+      localStorage.removeItem("selectedBusinessUnitId");
+      localStorage.removeItem("page");
+      localStorage.removeItem("editUserData");
+
+      setTimeout(() => navigate("/user"), 800);
+    } catch (err) {
+      setErrors({ api: "Failed to update user" });
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Edited user data:", formData);
-    navigate("/user");
-  };
-
   const handleDelete = () => {
-    console.log("User deleted:", formData.username);
-    navigate("/user");
+    if (window.confirm("Delete user?")) navigate("/user");
   };
 
   const handleBackup = () => {
-    console.log("Backup taken for:", formData.username);
+    alert("Backup taken.");
   };
 
   return (
@@ -219,29 +333,51 @@ export default function EditUser() {
 
       <div className="form-container">
         <h2>Edit User</h2>
-        <form onSubmit={handleSubmit} className="add-user-form">
-          {/*
-          <label>
-            Company Name
-            <input type="text" name="company" value={formData.company} onChange={handleInputChange} onFocus={() => handleFocus("company")} />
-          </label> */}
 
+        {errors.api && <div className="login-error">{errors.api}</div>}
+        {successMsg && <div className="success-msg">{successMsg}</div>}
+
+        <form onSubmit={handleSubmit} className="add-user-form">
           <label>
             User Name
-            <input type="text" name="username" value={formData.username} onChange={handleInputChange} onFocus={() => handleFocus("username")} />
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleInputChange}
+            />
+            {submitted && errors.username && (
+              <p className="error">{errors.username}</p>
+            )}
           </label>
 
           <label>
             E-Mail Address
-            <input type="email" name="email" value={formData.email} onChange={handleInputChange} onFocus={() => handleFocus("email")} />
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+            />
+            {submitted && errors.email && (
+              <p className="error">{errors.email}</p>
+            )}
           </label>
 
           <label>
             Contact Number
-            <input type="text" name="contact" value={formData.contact} onChange={handleInputChange} onFocus={() => handleFocus("contact")} />
+            <input
+              type="text"
+              name="contact"
+              value={formData.contact}
+              onChange={handleInputChange}
+              maxLength={10}
+            />
+            {submitted && errors.contact && (
+              <p className="error">{errors.contact}</p>
+            )}
           </label>
 
-          {/* Business Unit */}
           <label className="autocomplete">
             Business Unit
             <input
@@ -250,24 +386,35 @@ export default function EditUser() {
               value={formData.businessUnit}
               onChange={handleInputChange}
               autoComplete="off"
-              onFocus={() => handleFocus("businessUnit")}
+              onFocus={() => setUnitFocused(true)}
               onBlur={() => {
                 setUnitFocused(false);
                 handleCustomCheck("businessUnit");
               }}
             />
-            {unitFocused && filteredBusinessUnits.length > 0 && (
+            {submitted && errors.businessUnit && (
+              <p className="error">{errors.businessUnit}</p>
+            )}
+            {unitFocused && (
               <ul className="suggestions">
-                {filteredBusinessUnits.map((unit) => (
-                  <li key={unit.usrbu_id} onMouseDown={() => handleSuggestionClick("businessUnit", unit)}>
-                    {unit.business_unit_name}
-                  </li>
-                ))}
+                {filteredBusinessUnits.length > 0 ? (
+                  filteredBusinessUnits.map((unit) => (
+                    <li
+                      key={unit.usrbu_id}
+                      onMouseDown={() =>
+                        handleSuggestionClick("businessUnit", unit)
+                      }
+                    >
+                      {unit.business_unit_name}
+                    </li>
+                  ))
+                ) : (
+                  <li className="no-suggestions">No Business Unit Found</li>
+                )}
               </ul>
             )}
           </label>
 
-          {/* Department */}
           <label className="autocomplete">
             Department
             <input
@@ -275,76 +422,97 @@ export default function EditUser() {
               name="department"
               value={formData.department}
               onChange={handleInputChange}
-              autoComplete="off"
               disabled={!formData.businessUnit}
-              placeholder={!formData.businessUnit ? "Select Business Unit first" : ""}
-              onFocus={() => handleFocus("department")}
+              autoComplete="off"
+              onFocus={() => setDeptFocused(true)}
               onBlur={() => {
                 setDeptFocused(false);
                 handleCustomCheck("department");
               }}
             />
-            {deptFocused && filteredDepartments.length > 0 && (
+            {submitted && errors.department && (
+              <p className="error">{errors.department}</p>
+            )}
+            {deptFocused && (
               <ul className="suggestions">
-                {filteredDepartments.map((dept) => (
-                  <li key={dept.usrdept_id} onMouseDown={() => handleSuggestionClick("department", dept)}>
-                    {dept.usrdept_department_name}
-                  </li>
-                ))}
+                {filteredDepartments.length > 0 ? (
+                  filteredDepartments.map((dept) => (
+                    <li
+                      key={dept.usrdept_id}
+                      onMouseDown={() =>
+                        handleSuggestionClick("department", dept)
+                      }
+                    >
+                      {dept.usrdept_department_name}
+                    </li>
+                  ))
+                ) : (
+                  <li className="no-suggestions">No Department Found</li>
+                )}
               </ul>
             )}
           </label>
 
           <label>
             Escalation Email
-            <input type="email" name="escalationEmail" value={formData.escalationEmail} onChange={handleInputChange} onFocus={() => handleFocus("escalationEmail")} />
+            <input
+              type="email"
+              name="escalationEmail"
+              value={formData.escalationEmail}
+              onChange={handleInputChange}
+            />
+            {submitted && errors.escalationEmail && (
+              <p className="error">{errors.escalationEmail}</p>
+            )}
           </label>
 
-          {errors.api && <div className="login-error">{errors.api}</div>}
-          {successMsg && <div className="success-msg">{successMsg}</div>}
-
           <div className="action-buttons">
-            <button type="submit" className="submit-btn">Save Changes</button>
-            <button type="button" className="submit-btn delete-btn" onClick={handleDelete}>Delete User</button>
+            <button
+              type="submit"
+              className="submit-btn"
+              disabled={!isSaveEnabled}
+              style={{
+                opacity: isSaveEnabled ? 1 : 0.5,
+                cursor: isSaveEnabled ? "pointer" : "not-allowed",
+              }}
+            >
+              Save Changes
+            </button>
+
+            <button
+              type="button"
+              className="submit-btn delete-btn"
+              onClick={handleDelete}
+            >
+              Delete User
+            </button>
           </div>
 
           <div className="backup-container">
-            <button type="button" className="backup-btn" onClick={handleBackup}>Take Backup</button>
+            <button type="button" className="backup-btn" onClick={handleBackup}>
+              Take Backup
+            </button>
           </div>
         </form>
 
-        {/* Popup */}
         {popup.visible && (
           <div className="popup-overlay">
             <div className="popup">
-              <p>Do you want to add "{popup.value}" as a new {popup.type === "businessUnit" ? "Business Unit" : "Department"}?</p>
+              <p>
+                Add "{popup.value}" as a new{" "}
+                {popup.type === "businessUnit" ? "Business Unit" : "Department"}?
+              </p>
               <div className="popup-buttons">
-                <button className="popup-yes" onClick={handlePopupYes}>Yes</button>
-                <button className="popup-no" onClick={handlePopupNo}>No</button>
+                <button className="popup-yes" onClick={handlePopupYes}>
+                  Yes
+                </button>
+                <button className="popup-no" onClick={handlePopupNo}>
+                  No
+                </button>
               </div>
             </div>
           </div>
         )}
-        <style>{`
-          .autocomplete { position: relative; display: block; margin-bottom: 1.5rem; }
-          .autocomplete input { width: 100%; padding: 8px; box-sizing: border-box; border-radius: 6px; border: 1px solid #ccc; font-size: 1rem; }
-          .suggestions { position: absolute; top: 100%; left: 0; right: 0; border: 1px solid #ccc; border-top: none; background: white; list-style: none; margin: 0; padding: 0; max-height: 150px; overflow-y: auto; z-index: 1000; }
-          .suggestions li { padding: 8px; cursor: pointer; }
-          .suggestions li:hover { background: #f0f0f0; }
-          label { position: relative; font-weight: 500; display: block; margin-bottom: 0.5rem; }
-          .popup-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 2000; animation: fadeIn 0.2s ease-in-out; }
-          .popup { background:#fff; padding: 2rem 2.5rem; border-radius:12px; max-width:400px; width:90%; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); animation: slideUp 0.25s ease-out; }
-          .popup p { font-size:1.1rem; margin-bottom:1.5rem; color:#333; }
-          .popup-buttons { display:flex; justify-content:space-between; gap:1rem; }
-          .popup-buttons button { flex:1; padding:0.6rem 0; font-size:1rem; font-weight:500; border:none; border-radius:6px; cursor:pointer; transition: all 0.2s ease-in-out; }
-          .popup-yes { background-color:#4caf50; color:#fff; }
-          .popup-yes:hover { background-color:#43a047; }
-          .popup-no { background-color:#f44336; color:#fff; }
-          .popup-no:hover { background-color:#e53935; }
-          @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
-          @keyframes slideUp { from {transform:translateY(20px); opacity:0;} to {transform:translateY(0); opacity:1;} }
-          .action-buttons { margin-top: 1rem; }
-        `}</style>
       </div>
     </div>
   );

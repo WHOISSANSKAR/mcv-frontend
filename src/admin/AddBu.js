@@ -70,15 +70,19 @@ export default function AddBU() {
 
         // ✅ Redirect based on 'page' variable
         setTimeout(() => {
-          if (page === "1") {
-            navigate("/BusinessUnit");
-          } else if (page === "2") {
-            navigate("/add-user");
-          } else {
-            navigate("/dashboard"); // fallback
-          }
-          localStorage.removeItem("page"); // ✅ Clean up after redirect
-        }, 1000);
+  if (page === "1") {
+    navigate("/BusinessUnit");
+  } else if (page === "2") {
+    navigate("/add-user");
+  } else if (page === "3") {
+    navigate("/edit-user");   // ✅ NEW: redirect to Edit User
+  } else {
+    navigate("/dashboard"); // fallback
+  }
+
+  localStorage.removeItem("page"); // ✅ Clean after redirect
+}, 1000);
+
       }
     } catch (err) {
       console.error(err);
