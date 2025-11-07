@@ -4,12 +4,11 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import { FaSearch } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { FaUsers, FaShieldAlt, FaPen, FaCalendarAlt } from "react-icons/fa"; // add this import at the top
+import { FaUsers, FaShieldAlt, FaPen, FaCalendarAlt } from "react-icons/fa";
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
 import "./Dashboard.css";
 
-// ---------------- Initial Data ----------------
 const pieTrafficData = [
   { name: "Compliant", value: 60000 },
   { name: "Non-Compliant", value: 65000 },
@@ -18,20 +17,44 @@ const pieTrafficData = [
 
 const COLORS = ["#7c3aed", "#f50bed", "#d02cec"];
 
-// ---------------- Component ----------------
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // ✅ STATES FOR API VALUES
+  const [totalDepartments, setTotalDepartments] = useState(0);
+  const [totalCompliances, setTotalCompliances] = useState(0);
+  const [totalInstances, setTotalInstances] = useState(0);
+  const [endSubscription, setEndSubscription] = useState("");
+
   const navigate = useNavigate();
 
-  // Load user info from localStorage
+  // Load user from localStorage
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
   }, []);
+
+  // ✅ FETCH DASHBOARD SUMMARY FROM API
+  useEffect(() => {
+  fetch("http://localhost:5000/dashboard/summary", {   // ✅ must match login origin
+    method: "GET",
+    credentials: "include",
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.error) return;
+
+      setTotalCompliances(data.total_compliances);
+      setTotalDepartments(data.total_departments);
+      setTotalInstances(data.total_actions);
+      setEndSubscription(data.subscription_end_date || "");
+    })
+    .catch((err) => console.log("Dashboard API Error:", err));
+}, []);
+
 
   // Fix calendar overflow
   useEffect(() => {
@@ -41,45 +64,31 @@ export default function Dashboard() {
 
   return (
     <div className="Dashboard">
-      {/* Sidebar */}
       <UserSidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-
-      {/* Header */}
       <UserHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
 
-      {/* Head Section */}
       <div className="headSection">
         <div></div>
         <div className="rightGroup">
-         <div className="finderBox">
-  <input
-    type="text"
-    placeholder="Can't find something? Search it here!"
-  />
-  <FaSearch className="finderIcon" />
-</div>
-
-          <div className="buttonGroup">
-            
+          <div className="finderBox">
+            <input type="text" placeholder="Can't find something? Search it here!" />
+            <FaSearch className="finderIcon" />
           </div>
         </div>
       </div>
 
-      {/* Greeting & Compliance Score Bar */}
       <div className="welcome-bar">
         <div className="welcome-user">
-  Hello,<br />
-  {user ? user.usrlst_name : "Admin"}
-</div>
+          Hello,<br />
+          {user ? user.usrlst_name : "Admin"}
+        </div>
 
         <div className="welcome-score">Current Compliance : 100%</div>
         <div className="welcome-right"></div>
       </div>
 
-      {/* Charts Section */}
       <section className="charts">
         <div className="chart-row top">
-          {/* Compliance Health Pie Chart */}
           <div className="chart-card">
             <h3>Compliance Health</h3>
             <ResponsiveContainer width="100%" height={200}>
@@ -104,7 +113,6 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
 
-          {/* Calendar */}
           <div className="chart-card calendar-card">
             <h3>Compliance Calendar</h3>
             <div className="calendar-wrapper">
@@ -117,39 +125,43 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* ✅ STATS UPDATED WITH API VALUES */}
         <section className="stats">
-  <div className="stat-box">
-    <div className="icon"><FaUsers /></div>
-    <div className="content">
-    <div className="value">2</div>
-     <div className="label">Department</div>
-    </div>
-  </div>
+          <div className="stat-box">
+            <div className="icon"><FaUsers /></div>
+            <div className="content">
+              <div className="value">{totalDepartments}</div>
+              <div className="label">Department</div>
+            </div>
+          </div>
 
-  <div className="stat-box">
-    <div className="icon"><FaShieldAlt /></div>
-    <div className="content">
-    <div className="value">5</div>
-    <div className="label">Compliance</div>
-    </div>
-  </div>
+          <div className="stat-box">
+            <div className="icon"><FaShieldAlt /></div>
+            <div className="content">
+              <div className="value">{totalCompliances}</div>
+              <div className="label">Compliance</div>
+            </div>
+          </div>
 
-  <div className="stat-box">
-    <div className="icon"><FaPen /></div>
-    <div className="content">
-    <div className="value">12</div>
-    <div className="label2">Action</div>
-    </div>
-  </div>
+          <div className="stat-box">
+            <div className="icon"><FaPen /></div>
+            <div className="content">
+              <div className="value">{totalInstances}</div>
+              <div className="label2">Instances</div>
+            </div>
+          </div>
 
-  <div className="stat-box">
-    <div className="icon"><FaCalendarAlt /></div>
-    <div className="content">
-    <div className="value1">02-09-2026</div>
-    <div className="label1">End of Subscription</div>
-    </div>
-  </div>
-</section>
+          <div className="stat-box">
+            <div className="icon"><FaCalendarAlt /></div>
+            <div className="content">
+              <div className="value1">
+                {endSubscription ? endSubscription.split("T")[0] : ""}
+              </div>
+              <div className="label1">End of Subscription</div>
+            </div>
+          </div>
+        </section>
       </section>
     </div>
   );

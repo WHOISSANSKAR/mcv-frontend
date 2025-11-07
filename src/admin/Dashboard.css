@@ -96,7 +96,6 @@ body {
   color: #000000;
   width: 400px; /* increased width */
   height: 30px;
-  margin-right: -30px; /* shifted to the right */
 }
 
 .finderBox input {

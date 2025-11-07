@@ -141,10 +141,8 @@ export default function AddUser() {
       .catch((err) => console.error("Error fetching departments:", err));
   };
 
-  // Prevent spaces & trim all inputs dynamically
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    // Prevent spaces-only input
     if (value.trim() === "" && value !== "") return;
 
     setSuccessMsg("");
@@ -220,22 +218,18 @@ export default function AddUser() {
     }
   };
 
- const handlePopupYes = () => {
-  if (popup.type === "businessUnit") {
-    localStorage.setItem("customBU", popup.value);
-    localStorage.setItem("fromAddBU", "true");
-    
-    // ✅ Added line: store page=2 before navigating
-    localStorage.setItem("page", "2");
-    
-    navigate("/add-bu");
-  } else if (popup.type === "department") {
-    localStorage.setItem("customDept", popup.value);
-    localStorage.setItem("fromAddDept", "true");
-    navigate(`/add-department?businessUnitId=${formData.businessUnitId}`);
-  }
-};
-
+  const handlePopupYes = () => {
+    if (popup.type === "businessUnit") {
+      localStorage.setItem("customBU", popup.value);
+      localStorage.setItem("fromAddBU", "true");
+      localStorage.setItem("page", "2");
+      navigate("/add-bu");
+    } else if (popup.type === "department") {
+      localStorage.setItem("customDept", popup.value);
+      localStorage.setItem("fromAddDept", "true");
+      navigate(`/add-department?businessUnitId=${formData.businessUnitId}`);
+    }
+  };
 
   const handlePopupNo = () => {
     if (popup.type === "businessUnit")
@@ -261,14 +255,12 @@ export default function AddUser() {
     setErrors({});
     setPopup({ visible: false, type: "", value: "" });
 
-    // Trim all fields before validation
     const trimmedData = {};
     Object.keys(formData).forEach((key) => {
       const value = formData[key];
       trimmedData[key] = value != null && typeof value === "string" ? value.trim() : value;
     });
 
-    // Validation: ensure no blank or spaces-only
     const requiredFields = [
       "company",
       "username",
@@ -283,6 +275,11 @@ export default function AddUser() {
         setErrors({ api: "All fields are required and cannot be blank or contain only spaces." });
         return;
       }
+    }
+
+    if (trimmedData.contact.length !== 10) {
+      setErrors({ api: "Contact number must be exactly 10 digits." });
+      return;
     }
 
     localStorage.removeItem("addUserForm");
@@ -330,7 +327,6 @@ export default function AddUser() {
     }
   };
 
-  // Auto fade messages
   useEffect(() => {
     if (errors.api) {
       setErrorVisible(true);
@@ -364,10 +360,14 @@ export default function AddUser() {
 
         <div className="messages-top" style={{ margin: "0 auto 1rem auto", width: "50%" }}>
           {errors.api && (
-            <div className={`login-error ${!errorVisible ? "fade-out" : ""}`}>{errors.api}</div>
+            <div className={`login-error ${!errorVisible ? "fade-out" : ""}`}>
+              {errors.api}
+            </div>
           )}
           {successMsg && (
-            <div className={`success-msg ${!successVisible ? "fade-out" : ""}`}>{successMsg}</div>
+            <div className={`success-msg ${!successVisible ? "fade-out" : ""}`}>
+              {successMsg}
+            </div>
           )}
         </div>
 
@@ -402,18 +402,40 @@ export default function AddUser() {
             />
           </label>
 
-          <label>
-            Contact Number
-            <input
-              type="text"
-              name="contact"
-              value={formData.contact}
-              onChange={(e) => {
-                const onlyDigits = e.target.value.replace(/\D/g, "");
-                setFormData((prev) => ({ ...prev, contact: onlyDigits }));
-              }}
-            />
-          </label>
+         <label>
+  Contact Number
+  <input
+    type="text"
+    name="contact"
+    value={formData.contact}
+    onChange={(e) => {
+      const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 10);
+
+      // Update field
+      setFormData((prev) => ({ ...prev, contact: onlyDigits }));
+
+      // ✅ Auto-remove error when corrected to 10 digits
+      if (onlyDigits.length === 10) {
+        setErrors((prev) => ({ ...prev, contact: "" }));
+      }
+    }}
+    onBlur={() => {
+      // ✅ Only show error on blur if incomplete
+      if (formData.contact.length > 0 && formData.contact.length < 10) {
+        setErrors((prev) => ({
+          ...prev,
+          contact: "Contact number must be exactly 10 digits.",
+        }));
+      }
+    }}
+    maxLength={10}
+  />
+
+  {errors.contact && (
+    <p style={{ color: "red", fontSize: "14px" }}>{errors.contact}</p>
+  )}
+</label>
+
 
           <label className="autocomplete">
             Business Unit

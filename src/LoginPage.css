@@ -266,7 +266,7 @@
   width: 220px; /* adjust as needed */
   height: auto;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-  margin-bottom: -50px;
+  margin-bottom: 50px;
 }
 
 
@@ -609,7 +609,7 @@ html, body {
   position: relative;
   flex: 0 0 auto;
   width: 450px;
-  min-height: 400px;
+  height: 450px;
   background: #fff;
   border-radius: 16px;
   border-top: 5px solid #0D6EFD;
@@ -645,14 +645,14 @@ html, body {
   position: absolute;
   top: 20px;
   left: 20px;
-  font-size: 7rem;
-  color: #0D6EFD;
+  font-size: 5rem;
+  color: #000000;
 }
 .feature-card h3 {
   font-size: 2rem;
   margin-bottom: 10px;
-  margin-top: 80px;
-  color: #0D6EFD;
+  margin-top: 70px;
+  color: #000000;
 }
 .feature-card p {
   font-size: 1.3rem;
@@ -669,6 +669,7 @@ html, body {
   text-decoration: none;
   cursor: pointer;
   transition: color 0.3s ease;
+  margin-top: 100px;
 }
 .read-more .arrow { transition: transform 0.3s ease; }
 .read-more:hover { color: #6b7280; }
@@ -711,6 +712,7 @@ html, body {
   letter-spacing: 1px;
   margin-left: -780px;
   color: white;
+  margin-top: -20px;
 }
 
 
@@ -1000,6 +1002,7 @@ html, body {
   transition: all 0.4s ease;
 }
 
+
 /* === Responsive adjustments for Features & About Us === */
 @media (max-width: 900px) {
   /* --- Features Section --- */
@@ -1169,15 +1172,4 @@ html, body {
 input:focus + .login-error {
   display: none;
 }
-/* hidden initially */
-.scroll-element {
-  opacity: 0;
-  transform: translateY(50px);
-  transition: all 0.6s ease-out;
-}
 
-/* when in view */
-.scroll-element.show {
-  opacity: 1;
-  transform: translateY(0);
-}

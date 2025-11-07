@@ -74,7 +74,7 @@ export default function BusinessUnit() {
     fetchData();
   }, [navigate]);
 
-  // 🔹 Filter only by Business Unit Name
+  // ✅ Filter by BU name only
   const filteredData = data.filter((row) =>
     (row.businessUnitName || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -82,10 +82,17 @@ export default function BusinessUnit() {
   const currentRows = filteredData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
 
-  // ✅ Add Unit click handler
+  // ✅ Add Unit button
   const handleAddUnit = () => {
     localStorage.setItem("page", "1");
     navigate("/add-bu");
+  };
+
+  // ✅ Edit Handler — Stores BU Name + ID in localStorage
+  const handleEdit = (row) => {
+    localStorage.setItem("editBusinessUnitName", row.businessUnitName);
+    localStorage.setItem("editBusinessUnitId", row.businessUnitId);
+    navigate("/edit-bu");
   };
 
   return (
@@ -97,7 +104,7 @@ export default function BusinessUnit() {
         <div className="compliance-score">Business Unit</div>
         <div className="rightGroup">
           <div className="buttonGroup">
-            <button className="headBtn" onClick={() => navigate("/add-user")}>
+            <button className="headBtn" onClick={() => navigate("/user_dashboard")}>
               <FaPlusCircle className="btnIcon" /> Compliance Zone
             </button>
           </div>
@@ -115,8 +122,12 @@ export default function BusinessUnit() {
           <button className="btn blue-btn" onClick={() => navigate("/department")}>
             Departments
           </button>
-          <button className="btn blue-btn" onClick={() => navigate("/user")}>Users</button>
-          <button className="btn blue-btn" onClick={() => navigate("/activity")}>Activity</button>
+          <button className="btn blue-btn" onClick={() => navigate("/user")}>
+            Users
+          </button>
+          <button className="btn blue-btn" onClick={() => navigate("/activity")}>
+            Activity
+          </button>
         </div>
 
         <div className="table-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -129,12 +140,8 @@ export default function BusinessUnit() {
             <FaSearch className="search-icon" />
           </div>
 
-          {/* ✅ Updated Add Unit button */}
-          <button
-            className="action-btn primary"
-            onClick={handleAddUnit}
-          >
-            <FaPlusCircle style={{ marginRight: "5px" }} /> Add Unit
+          <button className="action-btn primary" onClick={handleAddUnit}>
+            + Add Unit
           </button>
 
           <button className="action-btn primary">Export</button>
@@ -156,10 +163,13 @@ export default function BusinessUnit() {
                 <th>Action</th>
               </tr>
             </thead>
+
             <tbody>
               {currentRows.length === 0 ? (
                 <tr>
-                  <td colSpan="4" style={{ textAlign: "center", padding: "20px" }}>No data available</td>
+                  <td colSpan="4" style={{ textAlign: "center", padding: "20px" }}>
+                    No data available
+                  </td>
                 </tr>
               ) : (
                 currentRows.map((row, idx) => (
@@ -168,7 +178,12 @@ export default function BusinessUnit() {
                     <td>{row.businessUnitName}</td>
                     <td>{row.userName}</td>
                     <td>
-                      <button className="edit-btn" onClick={() => navigate("/edit-user")}>Edit</button>
+                      <button
+                        className="edit-btn"
+                        onClick={() => handleEdit(row)}  // ✅ Updated
+                      >
+                        Edit
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -177,9 +192,18 @@ export default function BusinessUnit() {
           </table>
 
           <div className="pagination">
-            <button disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>Prev</button>
-            <span>Page {currentPage} of {totalPages}</span>
-            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>Next</button>
+            <button disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
+              Prev
+            </button>
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              Next
+            </button>
           </div>
         </>
       )}

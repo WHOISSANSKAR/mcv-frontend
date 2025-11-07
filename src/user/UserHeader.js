@@ -42,7 +42,6 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
           onClick={() => setMenuOpen(!menuOpen)}
         />
 
-        {/* Clickable logo */}
         <div
           className="logo"
           onClick={() => navigate("/user_dashboard")}
@@ -57,7 +56,6 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
         style={{ position: "relative" }}
         ref={dropdownRef}
       >
-        {/* User Button */}
         <button
           className="btn user-primary"
           onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -66,7 +64,6 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
           <FaUser className="btnIcon" color="#fff" /> User
         </button>
 
-        {/* Dropdown Menu */}
         {dropdownOpen && (
           <div
             style={{
@@ -81,7 +78,8 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
               minWidth: "140px",
             }}
           >
-            {/* ✅ Show Admin button only if user is admin */}
+
+            {/* ✅ Admin Button */}
             {isAdmin && (
               <button
                 style={{
@@ -100,6 +98,7 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
               </button>
             )}
 
+            {/* ✅ Updated Logout Logic */}
             <button
               style={{
                 display: "block",
@@ -111,7 +110,21 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
                 cursor: "pointer",
                 fontSize: "14px",
               }}
-              onClick={() => {
+              onClick={async () => {
+                // ✅ NEW: Backend logout API
+                try {
+                  await fetch("http://localhost:5000/login/logout", {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                  });
+                } catch (err) {
+                  console.error("Logout API Error:", err);
+                }
+
+                // ✅ OLD LOGIC (same as before)
                 localStorage.removeItem("isLoggedIn");
                 localStorage.removeItem("user");
                 window.location.reload();
@@ -119,6 +132,7 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
             >
               Logout
             </button>
+
           </div>
         )}
       </div>

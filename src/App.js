@@ -22,6 +22,8 @@ import Compliance from "./admin/Compliance";
 import ESGDashboard from "./admin/ESGDashboard";
 import UserDashboard from "./user/UserDashboard";
 import CompanyForm from "./usergroupform";
+import EditBu from "./admin/edit-bu"
+import EditDept from "./admin/edit-dept";
 
 // App.js — Correct imports (exact filenames)
 import AddStatutory from "./user/add-statutory";
@@ -86,6 +88,15 @@ function App() {
             )
           }
         />
+        <Route
+  path="/edit-dept"
+  element={
+    <ProtectedRoute roles={["admin"]}>
+      <EditDept />
+    </ProtectedRoute>
+  }
+/>
+
 
         {/* Admin Routes */}
         <Route
@@ -96,7 +107,16 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/edit-bu"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <EditBu />
+            </ProtectedRoute>
+          }
+        />
        <Route
+        
   path="/user_group"
   element={
     <ProtectedRoute roles={["admin"]}>

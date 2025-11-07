@@ -88,9 +88,7 @@ export default function Compliance() {
         <div className="compliance-score">Compliance Report</div>
         <div className="rightGroup">
           <div className="buttonGroup">
-            <button className="headBtn" onClick={() => navigate("/add-user")}>
-              <FaPlusCircle className="btnIcon" /> Compliance Zone
-            </button>
+            
           </div>
         </div>
       </div>

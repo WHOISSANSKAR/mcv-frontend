@@ -56,6 +56,7 @@ export default function User() {
             department_id: row.usrdept_id || "N/A",
             department_name: row.usrdept_department_name || "N/A",
             business_unit_name: row.usrbu_business_unit_name || "N/A",
+            business_unit_id: row.usrbu_id || "N/A",
             user_name: row.user_name || "Unknown User",
           }));
           setDepartments(formatted);
@@ -76,13 +77,23 @@ export default function User() {
     fetchDepartments();
   }, [navigate]);
 
-  // 🔹 Filter only by department name
+  // ✅ Filter only by department name
   const filteredData = departments.filter((item) =>
     (item.department_name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const currentRows = filteredData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
+
+  // ✅ EDIT DEPARTMENT → Save info to localStorage
+  const handleEditDepartment = (dept) => {
+    localStorage.setItem("editDeptName", dept.department_name);
+    localStorage.setItem("editDeptId", dept.department_id);
+    localStorage.setItem("editDeptBusinessUnitName", dept.business_unit_name);
+    localStorage.setItem("editDeptBusinessUnitId", dept.business_unit_id);
+
+    navigate("/edit-dept");
+  };
 
   return (
     <div className="department">
@@ -93,7 +104,7 @@ export default function User() {
         <div className="compliance-score">Departments</div>
         <div className="rightGroup">
           <div className="buttonGroup">
-            <button className="headBtn" onClick={() => navigate("/add-user")}>
+            <button className="headBtn" onClick={() => navigate("/user_dashboard")}>
               <FaPlusCircle className="btnIcon" /> Compliance Zone
             </button>
           </div>
@@ -132,7 +143,7 @@ export default function User() {
             className="action-btn primary"
             onClick={() => navigate("/add-department")}
           >
-            Add Dept
+            + Add Dept
           </button>
 
           <button className="action-btn primary">Export</button>
@@ -168,7 +179,7 @@ export default function User() {
                     <td>{row.business_unit_name}</td>
                     <td>{row.user_name}</td>
                     <td>
-                      <button className="edit-btn" onClick={() => navigate("/edit-user")}>
+                      <button className="edit-btn" onClick={() => handleEditDepartment(row)}>
                         Edit
                       </button>
                     </td>

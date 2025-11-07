@@ -88,9 +88,7 @@ export default function Approved() {
         <div className="compliance-score">Approved</div>
         <div className="rightGroup">
           <div className="buttonGroup">
-            <button className="headBtn" onClick={() => navigate("/add-user")}>
-              <FaPlusCircle className="btnIcon" /> Compliance Zone
-            </button>
+           
           </div>
         </div>
       </div>

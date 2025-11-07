@@ -22,7 +22,7 @@ const features = [
     icon: <FaCloud />,
   },
   {
-    title: "DMM",
+    title: "Document Management",
     description:
       "Efficient document management module for secure storage, retrieval, and sharing.",
     icon: <FaFileAlt />,
@@ -58,7 +58,7 @@ const LoginPage = ({ setIsLoggedIn }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [errorKey, setErrorKey] = useState(0); // 👈 added to refresh animation
+  const [errorKey, setErrorKey] = useState(0);
   const navigate = useNavigate();
 
   const scrollRef = useRef(null);
@@ -71,6 +71,7 @@ const LoginPage = ({ setIsLoggedIn }) => {
     setLoginError("");
   };
 
+  // Scroll animations
   useEffect(() => {
     const elements = document.querySelectorAll(".scroll-element");
     const observer = new IntersectionObserver(
@@ -85,44 +86,55 @@ const LoginPage = ({ setIsLoggedIn }) => {
     return () => observer.disconnect();
   }, []);
 
+  // Auto-login if saved
   useEffect(() => {
     const savedLogin = localStorage.getItem("isLoggedIn");
     if (savedLogin === "true") setIsLoggedIn(true);
   }, [setIsLoggedIn]);
 
+  // ✅ UPDATED LOGIN METHOD for new API + your paths
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (password.length < 8) {
+    if (password.trim().length < 8) {
       setLoginError("Password must be at least 8 characters long.");
-      setErrorKey((prev) => prev + 1); // 👈 trigger refresh
+      setErrorKey((prev) => prev + 1);
       return;
     }
 
     try {
       const response = await fetch("http://localhost:5000/login/", {
+
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // ✅ required for Flask session cookies
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        setIsLoggedIn(true);
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("user", JSON.stringify(data.user));
-        closeLoginModal();
-        if (data.user && data.user.usrlst_role.toLowerCase() === "admin") {
-          window.location.href = "/dashboard";
-        } else if (data.user && data.user.usrlst_role.toLowerCase() === "user") {
-          window.location.href = "/user_dashboard";
-        } else {
-          setLoginError("Login successful, but role unknown.");
-          setErrorKey((prev) => prev + 1);
-        }
+      if (!response.ok) {
+        setLoginError(data.error || "Invalid email or password");
+        setErrorKey((prev) => prev + 1);
+        return;
+      }
+
+      // ✅ Save user & login
+      setIsLoggedIn(true);
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      closeLoginModal();
+
+      // ✅ YOUR CUSTOM PATHS HERE (override backend paths)
+      const role = data.user?.usrlst_role?.toLowerCase();
+
+      if (role === "admin") {
+        window.location.href = "/dashboard";          // ✅ your admin path
+      } else if (role === "user") {
+        window.location.href = "/user_dashboard";     // ✅ your user path
       } else {
-        setLoginError(data.error || "Invalid username or password");
+        setLoginError("Login successful, but role unknown.");
         setErrorKey((prev) => prev + 1);
       }
     } catch (err) {
@@ -139,8 +151,7 @@ const LoginPage = ({ setIsLoggedIn }) => {
   const scrollRight = () =>
     scrollRef.current.scrollBy({ left: 300, behavior: "smooth" });
 
-  
-
+  // Floating cards animation
   useEffect(() => {
     const cards = aboutCardsRef.current?.querySelectorAll(".about-card");
     if (!cards || cards.length === 0) return;
@@ -177,6 +188,7 @@ const LoginPage = ({ setIsLoggedIn }) => {
   return (
     <div className="login-page-container">
       <div className="login-page">
+        {/* NAVBAR */}
         <div className="navbar">
           <a href="/" className="brand">
             <img
@@ -205,6 +217,7 @@ const LoginPage = ({ setIsLoggedIn }) => {
           </div>
         </div>
 
+        {/* HERO SECTION */}
         <div className="content">
           <div className="left-section">
             <h1 className="heading scroll-element">
@@ -234,6 +247,7 @@ const LoginPage = ({ setIsLoggedIn }) => {
           </div>
         </div>
 
+        {/* LOGIN MODAL */}
         {showLoginModal && (
           <div className="modal-overlay" onClick={closeLoginModal}>
             <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -242,7 +256,6 @@ const LoginPage = ({ setIsLoggedIn }) => {
                 alt="MyComplianceView Logo"
                 className="modal-logo"
               />
-              <h2 className="scroll-element">Login</h2>
 
               {loginError && (
                 <div key={errorKey} className="login-error">
@@ -286,41 +299,39 @@ const LoginPage = ({ setIsLoggedIn }) => {
         )}
       </div>
 
-      {/* Features Section */}
-      {/* === Features Section === */}
-<section className="features-section">
-  <div className="features-header">
-    <h2 className="scroll-element">Features</h2>
-    <div className="feature-arrows">
-      <button onClick={scrollLeft} className="arrow-button">
-        <FaArrowLeft />
-      </button>
-      <button onClick={scrollRight} className="arrow-button">
-        <FaArrowRight />
-      </button>
-    </div>
-  </div>
-
-  <div className="features-scroll-wrapper">
-    <div className="features-container" ref={scrollRef}>
-      {features.map((feature, index) => (
-        <div className="feature-card" key={index}>
-          <div className="feature-icon">{feature.icon}</div>
-          <div className="feature-content">
-            <h3 className="scroll-element">{feature.title}</h3>
-            <p className="scroll-element">{feature.description}</p>
-            <a href="#" className="read-more">
-              Learn more <span className="arrow">›</span>
-            </a>
+      {/* FEATURES */}
+      <section className="features-section">
+        <div className="features-header">
+          <h2 className="scroll-element">Features</h2>
+          <div className="feature-arrows">
+            <button onClick={scrollLeft} className="arrow-button">
+              <FaArrowLeft />
+            </button>
+            <button onClick={scrollRight} className="arrow-button">
+              <FaArrowRight />
+            </button>
           </div>
         </div>
-      ))}
-      
-    </div>
-  </div>
-</section>
 
-      {/* About Section */}
+        <div className="features-scroll-wrapper">
+          <div className="features-container" ref={scrollRef}>
+            {features.map((feature, index) => (
+              <div className="feature-card" key={index}>
+                <div className="feature-icon">{feature.icon}</div>
+                <div className="feature-content">
+                  <h3 className="scroll-element">{feature.title}</h3>
+                  <p className="scroll-element">{feature.description}</p>
+                  <a href="#" className="read-more">
+                    Learn more <span className="arrow">›</span>
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ABOUT SECTION */}
       <section className="about-section" style={{ position: "relative" }}>
         <h2 className="about-title scroll-element">Our Services</h2>
         <div className="about-divider"></div>
@@ -335,45 +346,47 @@ const LoginPage = ({ setIsLoggedIn }) => {
         </div>
 
         <div className="floating-about-cards" ref={aboutCardsRef}>
-  <div className="about-card">
-    <img src="/Lawyer.png" alt="Lawyers" />
-    <div className="info-box">
-      <h3 className="title">Lawyers</h3>
-      <p>Legal experts ensuring compliance and smooth documentation for your business.</p>
-    </div>
-  </div>
+          <div className="about-card">
+            <img src="/Lawyer.png" alt="Lawyers" />
+            <div className="info-box">
+              <h3 className="title">Lawyers</h3>
+              <p>
+                Legal experts ensuring compliance and smooth documentation for
+                your business.
+              </p>
+            </div>
+          </div>
 
-  <div className="about-card">
-    <img src="/CA.png" alt="Chartered Accountants" />
-    <div className="info-box">
-      <h3 className="title">Chartered Accountants</h3>
-      <p>Certified professionals managing audits, accounts, and financial statements.</p>
-    </div>
-  </div>
+          <div className="about-card">
+            <img src="/CA.png" alt="Chartered Accountants" />
+            <div className="info-box">
+              <h3 className="title">Chartered Accountants</h3>
+              <p>
+                Certified professionals managing audits, accounts, and financial
+                statements.
+              </p>
+            </div>
+          </div>
 
-  <div className="about-card">
-    <img src="/engineer.png" alt="Engineers" />
-    <div className="info-box">
-      <h3 className="title">Engineers</h3>
-      <p>Technical minds designing, building, and innovating efficient solutions.</p>
-    </div>
-  </div>
-</div>
-
+          <div className="about-card">
+            <img src="/engineer.png" alt="Engineers" />
+            <div className="info-box">
+              <h3 className="title">Engineers</h3>
+              <p>
+                Technical minds designing, building, and innovating efficient
+                solutions.
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* About Us Cards Section */}
+      {/* ABOUT US CARDS */}
       <section className="about-us-cards-section">
         <h2 className="about-us-cards-title scroll-element">About Us</h2>
-        {/*<p className="about-us-description scroll-element">
-          We have a team of Lawyers, Chartered Accountants and Technical Experts.
-          This team keeps track of the ever-changing Laws and Regulations
-          announced by the Government so that you can stay updated with
-          compliances.
-        </p>*/}
       </section>
 
-      {/* Contact Section */}
+      {/* CONTACT SECTION */}
       <section className="contact-section" ref={contactRef}>
         <h2 className="contact-title scroll-element">Request a demo</h2>
         <div className="contact-divider"></div>
@@ -441,7 +454,7 @@ const LoginPage = ({ setIsLoggedIn }) => {
         </form>
       </section>
 
-      {/* Footer */}
+      {/* FOOTER */}
       <footer className="footer">
         <div className="footer-top">
           <div className="footer-sections">
