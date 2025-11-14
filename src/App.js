@@ -24,7 +24,9 @@ import UserDashboard from "./user/UserDashboard";
 import CompanyForm from "./usergroupform";
 import EditBu from "./admin/edit-bu"
 import EditDept from "./admin/edit-dept";
-
+import ApproveReport from "./admin/ApproveReport";
+import AssessmentPage from "./user/Assessment";
+import RestoreUser from "./admin/RestoreUser";
 // App.js — Correct imports (exact filenames)
 import AddStatutory from "./user/add-statutory";
 import AddSelf from "./user/add-self";
@@ -35,7 +37,7 @@ import AddCyber from "./user/add-cyber";
 import AddNotices from "./user/add-notices";
 import EditCompliance from "./user/edit-compliance.js";
 import StatutoryInfo from "./user/statutory_info.js";
-
+import AddAdminForm from "./AddAdminForm";
 import AddCompliance from "./user/add_compliance.js";
 import ManageStatutory from "./user/manage-statutory";
 import ManageSelf from "./user/manage-self";
@@ -97,6 +99,23 @@ function App() {
   }
 />
 
+<Route
+  path="/approve_report"
+  element={
+    <ProtectedRoute roles={["admin"]}>
+      <ApproveReport />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/restore_user"
+  element={
+    <ProtectedRoute roles={["admin"]}>
+      <RestoreUser />
+    </ProtectedRoute>
+  }
+/>
+<Route path="/add-admin" element={<AddAdminForm />} />
 
         {/* Admin Routes */}
         <Route
@@ -115,15 +134,8 @@ function App() {
             </ProtectedRoute>
           }
         />
-       <Route
-        
-  path="/user_group"
-  element={
-    <ProtectedRoute roles={["admin"]}>
-      <CompanyForm />
-    </ProtectedRoute>
-  }
-/>
+     <Route path="/user_group" element={<CompanyForm />} />
+
         <Route
           path="/edit-user"
           element={
@@ -241,7 +253,15 @@ function App() {
     </ProtectedRoute>
   }
 />
-
+<Route
+  path="/assessment"
+  element={
+    <ProtectedRoute roles={["user", "admin"]}>
+      <AssessmentPage/>
+    </ProtectedRoute>
+  }
+/>
+ 
 <Route
   path="/edit-compliance"
   element={

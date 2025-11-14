@@ -1,11 +1,11 @@
-// AddSelf.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
 import "./Dashboard.css";
 
 export default function AddSelf() {
   const [menuOpen, setMenuOpen] = useState(false);
+
   const [formData, setFormData] = useState({
     compliance_id: "",
     compliance_name: "",
@@ -25,12 +25,30 @@ export default function AddSelf() {
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState("");
 
+  // ✅ Load saved compliance row data on first render
+  useEffect(() => {
+    const savedRow = localStorage.getItem("selectedComplianceRow");
+    if (savedRow) {
+      const row = JSON.parse(savedRow);
+
+      // ✅ Autofill fields that we have values for
+      setFormData((prev) => ({
+        ...prev,
+        compliance_id: row.complianceId || "",
+        compliance_name: row.particular || "",
+        description: row.description || "",
+      }));
+    }
+  }, []);
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+
     setErrors((prev) => ({ ...prev, [name]: "" }));
     setSuccessMsg("");
   };
@@ -38,9 +56,15 @@ export default function AddSelf() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const newErrors = {};
-    if (!formData.compliance_name) newErrors.compliance_name = "Compliance Name is required";
-    if (!formData.start_date) newErrors.start_date = "Start Date is required";
-    if (!formData.end_date) newErrors.end_date = "End Date is required";
+
+    if (!formData.compliance_name)
+      newErrors.compliance_name = "Compliance Name is required";
+
+    if (!formData.start_date)
+      newErrors.start_date = "Start Date is required";
+
+    if (!formData.end_date)
+      newErrors.end_date = "End Date is required";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -49,85 +73,195 @@ export default function AddSelf() {
 
     console.log("Form submitted:", formData);
     setSuccessMsg("✅ Compliance created successfully!");
-    // Reset form or call API here
+
+    // API call or reset can go here
   };
 
   return (
     <div className="add_compliance">
       <UserSidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       <UserHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+
       <div className="form-container">
         <h2>Add Compliance</h2>
+
         <form onSubmit={handleSubmit} className="add-user-form">
+
+          {/* ✅ Autofilled */}
           <label>
             Compliance ID
-            <input type="text" name="compliance_id" value={formData.compliance_id} readOnly />
+            <input
+              type="text"
+              name="compliance_id"
+              value={formData.compliance_id}
+              readOnly
+            />
           </label>
 
+          {/* ✅ Autofilled name */}
           <label>
             Compliance Name
-            <input type="text" name="compliance_name" value={formData.compliance_name} onChange={handleInputChange} />
-            {errors.compliance_name && <span className="error">{errors.compliance_name}</span>}
+            <input
+              type="text"
+              name="compliance_name"
+              value={formData.compliance_name}
+              onChange={handleInputChange}
+            />
+            {errors.compliance_name && (
+              <span className="error">{errors.compliance_name}</span>
+            )}
           </label>
 
+          {/* User must enter these */}
           <label>
             Start Date
-            <input type="date" name="start_date" value={formData.start_date} onChange={handleInputChange} />
-            {errors.start_date && <span className="error">{errors.start_date}</span>}
+            <input
+              type="date"
+              name="start_date"
+              value={formData.start_date}
+              onChange={handleInputChange}
+            />
+            {errors.start_date && (
+              <span className="error">{errors.start_date}</span>
+            )}
           </label>
 
           <label>
             End Date
-            <input type="date" name="end_date" value={formData.end_date} onChange={handleInputChange} />
-            {errors.end_date && <span className="error">{errors.end_date}</span>}
+            <input
+              type="date"
+              name="end_date"
+              value={formData.end_date}
+              onChange={handleInputChange}
+            />
+            {errors.end_date && (
+              <span className="error">{errors.end_date}</span>
+            )}
           </label>
 
           <label>
             Comply By
-            <input type="date" name="comply_by" value={formData.comply_by} onChange={handleInputChange} />
+            <input
+              type="date"
+              name="comply_by"
+              value={formData.comply_by}
+              onChange={handleInputChange}
+            />
           </label>
 
+          {/* ✅ Autofilled description */}
           <label>
             Description
-            <textarea name="description" value={formData.description} onChange={handleInputChange}></textarea>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+            ></textarea>
           </label>
 
+          {/* Repeat Type Section */}
           <label className="autocomplete">
             Repeat Type
             <div>
-              <input type="radio" name="repeat_type" value="months" checked={formData.repeat_type === "months"} onChange={handleInputChange} />
-              <input type="number" name="repeat_months" value={formData.repeat_months} min="1" style={{ width: "60px" }} onChange={handleInputChange} /> Months
+              <input
+                type="radio"
+                name="repeat_type"
+                value="months"
+                checked={formData.repeat_type === "months"}
+                onChange={handleInputChange}
+              />
+              <input
+                type="number"
+                name="repeat_months"
+                value={formData.repeat_months}
+                min="1"
+                style={{ width: "60px" }}
+                onChange={handleInputChange}
+              />{" "}
+              Months
             </div>
+
             <div>
-              <input type="radio" name="repeat_type" value="days" checked={formData.repeat_type === "days"} onChange={handleInputChange} />
-              <input type="number" name="repeat_days" value={formData.repeat_days} style={{ width: "60px" }} onChange={handleInputChange} /> Days
+              <input
+                type="radio"
+                name="repeat_type"
+                value="days"
+                checked={formData.repeat_type === "days"}
+                onChange={handleInputChange}
+              />
+              <input
+                type="number"
+                name="repeat_days"
+                value={formData.repeat_days}
+                style={{ width: "60px" }}
+                onChange={handleInputChange}
+              />{" "}
+              Days
             </div>
+
             <div>
-              <input type="radio" name="repeat_type" value="none" checked={formData.repeat_type === "none"} onChange={handleInputChange} /> Do Not Repeat
+              <input
+                type="radio"
+                name="repeat_type"
+                value="none"
+                checked={formData.repeat_type === "none"}
+                onChange={handleInputChange}
+              />{" "}
+              Do Not Repeat
             </div>
           </label>
 
           <label>
             Reminder Days
-            <input type="number" name="reminder_days" value={formData.reminder_days} min="1" style={{ width: "60px" }} onChange={handleInputChange} /> Days Prior to Action Dates
+            <input
+              type="number"
+              name="reminder_days"
+              value={formData.reminder_days}
+              min="1"
+              style={{ width: "60px" }}
+              onChange={handleInputChange}
+            />{" "}
+            Days Prior to Action Dates
           </label>
 
           <label>
-            <input type="checkbox" name="add_escalation" checked={formData.add_escalation} onChange={handleInputChange} /> Add Escalation
+            <input
+              type="checkbox"
+              name="add_escalation"
+              checked={formData.add_escalation}
+              onChange={handleInputChange}
+            />{" "}
+            Add Escalation
           </label>
 
           <label>
             Escalation Email
-            <input type="email" name="escalation_email" value={formData.escalation_email} onChange={handleInputChange} readOnly={!formData.add_escalation} />
+            <input
+              type="email"
+              name="escalation_email"
+              value={formData.escalation_email}
+              onChange={handleInputChange}
+              readOnly={!formData.add_escalation}
+            />
           </label>
 
           <label>
             Reminder of Escalation Email
-            <input type="number" name="escalation_reminder_days" value={formData.escalation_reminder_days} style={{ width: "60px" }} onChange={handleInputChange} /> Days Prior to Action Dates
+            <input
+              type="number"
+              name="escalation_reminder_days"
+              value={formData.escalation_reminder_days}
+              style={{ width: "60px" }}
+              onChange={handleInputChange}
+            />{" "}
+            Days Prior to Action Dates
           </label>
 
           {successMsg && <span className="success-msg">{successMsg}</span>}
-          <button type="submit" className="submit-btn">Create Compliance</button>
+
+          <button type="submit" className="submit-btn">
+            Create Compliance
+          </button>
         </form>
       </div>
     </div>

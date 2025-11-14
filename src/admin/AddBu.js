@@ -12,26 +12,25 @@ export default function AddBU() {
     return saved;
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+
+  // ✅ Success/Error states like AddUser
+  const [errors, setErrors] = useState({});
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorVisible, setErrorVisible] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+
   const navigate = useNavigate();
 
-  // ✅ Clear any stale markers when AddBU loads
-  useEffect(() => {
-    localStorage.removeItem("fromAddBU");
-  }, []);
-
-  // ✅ Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess("");
+    setErrors({});
+    setSuccessMsg("");
 
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       if (!user.usrlst_id) {
-        setError("User not found. Please login again.");
+        setErrors({ api: "User not found. Please login again." });
         setLoading(false);
         return;
       }
@@ -41,9 +40,8 @@ export default function AddBU() {
         user_id: user.usrlst_id,
       };
 
-      // ✅ Prevent blank or space-only submissions
       if (!payload.business_unit_name) {
-        setError("Business Unit name cannot be blank.");
+        setErrors({ api: "Business Unit name cannot be blank." });
         setLoading(false);
         return;
       }
@@ -57,42 +55,69 @@ export default function AddBU() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to add Business Unit");
+        setErrors({ api: data.error || "Failed to add Business Unit" });
       } else {
-        console.log("Business Unit added:", data);
-        setSuccess("Business Unit added successfully!");
+        setSuccessMsg("✅ Business Unit added successfully!");
+        setBuName("");
 
-        // ✅ Only set fromAddBU = true if page = 2
         const page = String(localStorage.getItem("page") || "");
+
         if (page === "2") {
           localStorage.setItem("fromAddBU", "true");
         }
 
-        // ✅ Redirect based on 'page' variable
+        // ✅ Redirect after success
         setTimeout(() => {
-  if (page === "1") {
-    navigate("/BusinessUnit");
-  } else if (page === "2") {
-    navigate("/add-user");
-  } else if (page === "3") {
-    navigate("/edit-user");   // ✅ NEW: redirect to Edit User
-  } else {
-    navigate("/dashboard"); // fallback
-  }
+          const buPage = localStorage.getItem("BUpage");
 
-  localStorage.removeItem("page"); // ✅ Clean after redirect
-}, 1000);
+          if (buPage === "1") navigate("/add-department");
+          else if (buPage === "2") navigate("/add-user");
+          else if (buPage === "3") navigate("/edit-user");
+          else {
+            if (page === "1") navigate("/BusinessUnit");
+            else if (page === "2") navigate("/add-user");
+            else if (page === "3") navigate("/edit-user");
+            else navigate("/dashboard");
+          }
 
+          localStorage.removeItem("page");
+          localStorage.removeItem("BUpage");
+        }, 1000);
       }
     } catch (err) {
       console.error(err);
-      setError("Failed to add Business Unit. Please try again.");
+      setErrors({ api: "Failed to add Business Unit. Please try again." });
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Redirect non-admin or unauthenticated users
+  // ✅ Auto-hide error messages
+  useEffect(() => {
+    if (errors.api) {
+      setErrorVisible(true);
+      const timer = setTimeout(() => setErrorVisible(false), 4500);
+      const removeTimer = setTimeout(() => setErrors({}), 5000);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(removeTimer);
+      };
+    }
+  }, [errors.api]);
+
+  // ✅ Auto-hide success messages
+  useEffect(() => {
+    if (successMsg) {
+      setSuccessVisible(true);
+      const timer = setTimeout(() => setSuccessVisible(false), 4500);
+      const removeTimer = setTimeout(() => setSuccessMsg(""), 5000);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(removeTimer);
+      };
+    }
+  }, [successMsg]);
+
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -109,6 +134,21 @@ export default function AddBU() {
 
       <div className="form-container">
         <h2>Add Business Unit</h2>
+
+        {/* ✅ Unified success/error message div */}
+        <div className="messages-top" style={{ margin: "0 auto 1rem auto", width: "50%" }}>
+          {errors.api && (
+            <div className={`login-error ${!errorVisible ? "fade-out" : ""}`}>
+              {errors.api}
+            </div>
+          )}
+          {successMsg && (
+            <div className={`success-msg ${!successVisible ? "fade-out" : ""}`}>
+              {successMsg}
+            </div>
+          )}
+        </div>
+
         <form onSubmit={handleSubmit} className="add-user-form">
           <label>
             Business Unit Name
@@ -119,9 +159,6 @@ export default function AddBU() {
               required
             />
           </label>
-
-          {error && <div className="error">{error}</div>}
-          {success && <div className="success">{success}</div>}
 
           <button type="submit" className="submit-btn" disabled={loading}>
             {loading ? "Saving..." : "Add Business Unit"}

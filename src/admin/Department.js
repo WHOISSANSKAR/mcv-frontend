@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { FaSearch, FaPlusCircle } from "react-icons/fa";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
@@ -20,6 +20,7 @@ export default function User() {
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
 
+  // --- Auth check & fetch departments ---
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -29,46 +30,42 @@ export default function User() {
       return;
     }
 
-    if (!user.usrlst_id) {
-      setErrorMsg("User ID not found. Please login again.");
-      setLoading(false);
-      return;
-    }
-
     const fetchDepartments = async () => {
       try {
-        const response = await fetch(
-          `http://localhost:5000/user/departments/all?user_id=${user.usrlst_id}`
-        );
+        const response = await fetch("http://localhost:5000/user/departments/all", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (response.status === 401) {
+          setErrorMsg("Unauthorized access. Please login again.");
+          setLoading(false);
+          return;
+        }
 
         if (!response.ok) {
-          const text = await response.text();
-          throw new Error(`API Error: ${response.status} - ${text}`);
+          const txt = await response.text();
+          throw new Error(txt);
         }
 
         const result = await response.json();
 
-        if (!result || result.error || result.message === "No departments found") {
-          setErrorMsg("No Departments found.");
+        if (!Array.isArray(result) || result.length === 0) {
+          setErrorMsg("No departments found.");
           setDepartments([]);
-        } else if (Array.isArray(result) && result.length > 0) {
+        } else {
           const formatted = result.map((row) => ({
             department_id: row.usrdept_id || "N/A",
             department_name: row.usrdept_department_name || "N/A",
             business_unit_name: row.usrbu_business_unit_name || "N/A",
-            business_unit_id: row.usrbu_id || "N/A",
+            business_unit_id: row.usrdept_user_group_id || "N/A",
             user_name: row.user_name || "Unknown User",
           }));
           setDepartments(formatted);
-          setErrorMsg("");
-        } else {
-          setErrorMsg("No Departments found.");
-          setDepartments([]);
         }
       } catch (err) {
         console.error("Fetch error:", err);
-        setErrorMsg("No Departments found.");
-        setDepartments([]);
+        setErrorMsg("Failed to load departments.");
       } finally {
         setLoading(false);
       }
@@ -77,22 +74,55 @@ export default function User() {
     fetchDepartments();
   }, [navigate]);
 
-  // ✅ Filter only by department name
-  const filteredData = departments.filter((item) =>
-    (item.department_name || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // --- Search across all columns ---
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return departments;
+
+    return departments.filter((item) =>
+      Object.values(item).some((val) =>
+        (val || "").toString().toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [departments, searchTerm]);
 
   const currentRows = filteredData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
 
-  // ✅ EDIT DEPARTMENT → Save info to localStorage
   const handleEditDepartment = (dept) => {
     localStorage.setItem("editDeptName", dept.department_name);
     localStorage.setItem("editDeptId", dept.department_id);
     localStorage.setItem("editDeptBusinessUnitName", dept.business_unit_name);
     localStorage.setItem("editDeptBusinessUnitId", dept.business_unit_id);
-
     navigate("/edit-dept");
+  };
+
+  // --- Export filtered data to CSV ---
+  const exportToCSV = () => {
+    if (!filteredData || filteredData.length === 0) return;
+
+    const csvRows = [];
+    const headers = ["Department", "Business Unit", "User Name"];
+    csvRows.push(headers.join(","));
+
+    filteredData.forEach((row) => {
+      const values = [
+        row.department_name,
+        row.business_unit_name,
+        row.user_name,
+      ].map((val) => `"${val || ""}"`);
+      csvRows.push(values.join(","));
+    });
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "departments.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -103,11 +133,9 @@ export default function User() {
       <div className="headSection">
         <div className="compliance-score">Departments</div>
         <div className="rightGroup">
-          <div className="buttonGroup">
-            <button className="headBtn" onClick={() => navigate("/user_dashboard")}>
-              <FaPlusCircle className="btnIcon" /> Compliance Zone
-            </button>
-          </div>
+          <button className="headBtn" onClick={() => navigate("/user_dashboard")}>
+            <FaPlusCircle className="btnIcon" /> Compliance Zone
+          </button>
         </div>
       </div>
 
@@ -115,7 +143,14 @@ export default function User() {
         className="table-header"
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "45px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            marginLeft: "45px",
+          }}
+        >
           <button className="btn blue-btn" onClick={() => navigate("/BusinessUnit")}>
             Business Unit
           </button>
@@ -130,27 +165,32 @@ export default function User() {
           </button>
         </div>
 
-        <div className="table-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div
+          className="table-actions"
+          style={{ display: "flex", alignItems: "center", gap: "10px" }}
+        >
           <div className="search-box">
             <input
-              placeholder="Search by Department"
+              placeholder="Search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             <FaSearch className="search-icon" />
           </div>
-         <button
-  className="action-btn primary"
-  onClick={() => {
-    localStorage.setItem("page", "1");   // ✅ Save page=1 before going to Add Dept
-    navigate("/add-department");
-  }}
->
-  + Add Dept
-</button>
 
+          <button
+            className="action-btn primary"
+            onClick={() => {
+              localStorage.setItem("page", "1");
+              navigate("/add-department");
+            }}
+          >
+            + Add Dept
+          </button>
 
-          <button className="action-btn primary">Export</button>
+          <button className="action-btn primary" onClick={exportToCSV}>
+            Export
+          </button>
         </div>
       </div>
 
@@ -169,6 +209,7 @@ export default function User() {
                 <th>Action</th>
               </tr>
             </thead>
+
             <tbody>
               {currentRows.length === 0 ? (
                 <tr>

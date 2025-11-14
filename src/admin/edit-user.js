@@ -117,11 +117,24 @@ export default function EditUser() {
       .catch((err) => console.error("BU fetch error:", err));
   }, [adminId]);
 
-  const fetchDepartments = (buName, autoSelectLatest = false) => {
-    fetch(`http://localhost:5000/user/departments/all?user_id=${adminId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!Array.isArray(data)) return;
+  const fetchDepartments = (buName, autoSelectDept = false) => {
+  if (!buName) return;
+
+  fetch("http://localhost:5000/user/departments/all", {
+    method: "GET",
+    credentials: "include", // ✅ very important: allows Flask session cookies
+  })
+    .then(async (res) => {
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("Error fetching departments:", data.error || data.message);
+        setDepartments([]);
+        setFilteredDepartments([]);
+        return;
+      }
+
+      if (Array.isArray(data)) {
         const filtered = data
           .filter((d) => d.usrbu_business_unit_name === buName)
           .sort((a, b) => b.usrdept_id - a.usrdept_id);
@@ -129,7 +142,7 @@ export default function EditUser() {
         setDepartments(filtered);
         setFilteredDepartments(filtered);
 
-        if (autoSelectLatest && filtered.length > 0) {
+        if (autoSelectDept && filtered.length > 0) {
           const latestDept = filtered[0];
           setFormData((prev) => ({
             ...prev,
@@ -137,8 +150,14 @@ export default function EditUser() {
             departmentId: latestDept.usrdept_id,
           }));
         }
-      });
-  };
+      } else {
+        setDepartments([]);
+        setFilteredDepartments([]);
+      }
+    })
+    .catch((err) => console.error("Error fetching departments:", err));
+};
+
 
   const handleInputChange = (e) => {
     const { name } = e.target;
@@ -224,6 +243,8 @@ export default function EditUser() {
       localStorage.setItem("customBU", popup.value);
       localStorage.setItem("fromAddBU", "true");
       localStorage.setItem("page", "3");
+      
+  localStorage.setItem("BUpage", "3");   // ✅ NEW LINE
       navigate("/add-bu");
     } else if (popup.type === "department") {
       localStorage.setItem("customDept", popup.value);
@@ -352,17 +373,18 @@ export default function EditUser() {
           </label>
 
           <label>
-            E-Mail Address
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-            />
-            {submitted && errors.email && (
-              <p className="error">{errors.email}</p>
-            )}
-          </label>
+  E-Mail Address
+  <input
+    type="email"
+    name="email"
+    value={formData.email}
+    readOnly  // 🔒 email field locked
+    style={{ backgroundColor: "#f0f0f0", cursor: "not-allowed" }} // optional styling
+  />
+  {submitted && errors.email && (
+    <p className="error">{errors.email}</p>
+  )}
+</label>
 
           <label>
             Contact Number

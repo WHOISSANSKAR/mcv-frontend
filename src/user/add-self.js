@@ -1,4 +1,3 @@
-// AddSelf.jsx
 import React, { useState } from "react";
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
@@ -7,7 +6,7 @@ import "./Dashboard.css";
 export default function AddSelf() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
-    compliance_id: "com202510140001",
+    compliance_id: "",
     compliance_name: "",
     start_date: "",
     end_date: "",
@@ -35,7 +34,7 @@ export default function AddSelf() {
     setSuccessMsg("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
     if (!formData.compliance_name) newErrors.compliance_name = "Compliance Name is required";
@@ -47,9 +46,47 @@ export default function AddSelf() {
       return;
     }
 
-    console.log("Form submitted:", formData);
-    setSuccessMsg("✅ Compliance created successfully!");
-    // Reset form or call API here
+    try {
+      const response = await fetch("http://127.0.0.1:5000/compliance/add", {
+        method: "POST",
+        credentials: "include", // very important for session (user_id)
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cmplst_compliance_key: formData.compliance_id,
+          cmplst_country: "India", // you can make this dynamic later
+          cmplst_act: formData.compliance_name,
+          cmplst_particular: formData.compliance_name,
+          cmplst_start_date: formData.start_date,
+          cmplst_end_date: formData.end_date,
+          cmplst_action_date: formData.comply_by,
+          cmplst_description: formData.description,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSuccessMsg("✅ Compliance created successfully!");
+        console.log("API Success:", data);
+        // optionally reset form
+        setFormData((prev) => ({
+          ...prev,
+          compliance_name: "",
+          start_date: "",
+          end_date: "",
+          comply_by: "",
+          description: "",
+        }));
+      } else {
+        console.error("API Error:", data);
+        setSuccessMsg("❌ " + (data.error || "Failed to create compliance"));
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setSuccessMsg("❌ Error connecting to the server");
+    }
   };
 
   return (

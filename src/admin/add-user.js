@@ -123,33 +123,47 @@ export default function AddUser() {
 }, [userId]);
 
 
-  const fetchDepartments = (buName, autoSelectDept = false) => {
-    if (!userId || !buName) return;
-    fetch(`http://localhost:5000/user/departments/all?user_id=${userId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          const filtered = data
-            .filter((d) => d.usrbu_business_unit_name === buName)
-            .sort((a, b) => b.usrdept_id - a.usrdept_id);
-          setDepartments(filtered);
-          setFilteredDepartments(filtered);
+ const fetchDepartments = (buName, autoSelectDept = false) => {
+  if (!buName) return;
 
-          if (autoSelectDept && filtered.length > 0) {
-            const latestDept = filtered[0];
-            setFormData((prev) => ({
-              ...prev,
-              department: latestDept.usrdept_department_name,
-              departmentId: latestDept.usrdept_id,
-            }));
-          }
-        } else {
-          setDepartments([]);
-          setFilteredDepartments([]);
+  fetch("http://localhost:5000/user/departments/all", {
+    method: "GET",
+    credentials: "include", // ✅ very important: allows Flask session cookies
+  })
+    .then(async (res) => {
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("Error fetching departments:", data.error || data.message);
+        setDepartments([]);
+        setFilteredDepartments([]);
+        return;
+      }
+
+      if (Array.isArray(data)) {
+        const filtered = data
+          .filter((d) => d.usrbu_business_unit_name === buName)
+          .sort((a, b) => b.usrdept_id - a.usrdept_id);
+
+        setDepartments(filtered);
+        setFilteredDepartments(filtered);
+
+        if (autoSelectDept && filtered.length > 0) {
+          const latestDept = filtered[0];
+          setFormData((prev) => ({
+            ...prev,
+            department: latestDept.usrdept_department_name,
+            departmentId: latestDept.usrdept_id,
+          }));
         }
-      })
-      .catch((err) => console.error("Error fetching departments:", err));
-  };
+      } else {
+        setDepartments([]);
+        setFilteredDepartments([]);
+      }
+    })
+    .catch((err) => console.error("Error fetching departments:", err));
+};
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -233,6 +247,8 @@ export default function AddUser() {
     localStorage.setItem("customBU", popup.value);
     localStorage.setItem("fromAddBU", "true");
     localStorage.setItem("page", "2");   // ✅ already present
+    
+  localStorage.setItem("BUpage", "2");   // ✅ NEW LINE
     navigate("/add-bu");
 
   } else if (popup.type === "department") {

@@ -16,7 +16,7 @@ export default function User() {
   const rowsPerPage = 8;
   const navigate = useNavigate();
 
-  // Check admin access and fetch data
+  // ✅ Check admin access and fetch data
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -43,17 +43,20 @@ export default function User() {
     fetchUsers();
   }, [navigate]);
 
-  // Search filtering
+  // ✅ GLOBAL SEARCH ACROSS ALL COLUMNS
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
-    return data.filter(
-      item =>
-        (item.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.email || "").toLowerCase().includes(searchTerm.toLowerCase())
+
+    const lower = searchTerm.toLowerCase();
+
+    return data.filter(item =>
+      Object.values(item).some(val =>
+        (val || "").toString().toLowerCase().includes(lower)
+      )
     );
   }, [data, searchTerm]);
 
-  // Sorting
+  // ✅ Sorting
   const sortedData = useMemo(() => {
     let sortable = [...filteredData];
     if (sortConfig.key) {
@@ -76,10 +79,55 @@ export default function User() {
 
   const getSortIcon = key => {
     if (sortConfig.key !== key) return <FaSort className="sort-icon" />;
-    return sortConfig.direction === "asc" ? <FaSortUp className="sort-icon" /> : <FaSortDown className="sort-icon" />;
+    return sortConfig.direction === "asc" ? (
+      <FaSortUp className="sort-icon" />
+    ) : (
+      <FaSortDown className="sort-icon" />
+    );
   };
 
-  // Pagination
+  // ✅ Export to CSV (entire table)
+  const exportToCSV = () => {
+    if (!sortedData || sortedData.length === 0) return;
+
+    const csvRows = [];
+    const headers = [
+      "Name",
+      "E-mail",
+      "Contact",
+      "Company",
+      "Business Unit",
+      "Department",
+      "Escalation E-mail"
+    ];
+    csvRows.push(headers.join(","));
+
+    sortedData.forEach(row => {
+      const values = [
+        row.name,
+        row.email,
+        row.contact,
+        row.company_name,
+        row.business_unit,
+        row.department,
+        row.escalation_mail
+      ].map(val => `"${val || ""}"`);
+      csvRows.push(values.join(","));
+    });
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "users.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // ✅ Pagination
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
@@ -112,17 +160,19 @@ export default function User() {
         <div className="table-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div className="search-box">
             <input
-              placeholder="Search by Name or Email"
+              placeholder="Search"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
             <FaSearch className="search-icon" />
           </div>
-          
+
           <button className="action-btn primary" onClick={() => navigate("/add-user")}>
             + Add User
           </button>
-          <button className="action-btn primary">Export</button>
+          <button className="action-btn primary" onClick={exportToCSV}>
+            Export
+          </button>
         </div>
       </div>
 

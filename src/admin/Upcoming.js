@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { FaSearch, FaPlusCircle, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
@@ -33,13 +33,14 @@ export default function User() {
   const [searchTerm, setSearchTerm] = useState("");
   const rowsPerPage = 8;
 
-  // --- Search ---
+  // --- Search across all columns ---
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
-    return data.filter(
-      (item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const lowerTerm = searchTerm.toLowerCase();
+    return data.filter((item) =>
+      Object.values(item).some((val) =>
+        val.toString().toLowerCase().includes(lowerTerm)
+      )
     );
   }, [data, searchTerm]);
 
@@ -88,6 +89,61 @@ export default function User() {
     }
   }, [navigate]);
 
+  // --- Export to CSV ---
+  const exportToCSV = () => {
+    if (!sortedData.length) return;
+
+    const headers = [
+      "Id",
+      "Email",
+      "Department",
+      "Act",
+      "Name",
+      "Description",
+      "Start Date",
+      "Action Date",
+      "End Date",
+      "Original Date",
+      "Status",
+      "Approver",
+      "Request Date",
+      "Response Date",
+    ];
+
+    const csvRows = [];
+    csvRows.push(headers.join(","));
+
+    sortedData.forEach((row) => {
+      const values = [
+        row.id,
+        row.email,
+        row.department,
+        row.act,
+        row.name,
+        row.description,
+        row.startDate,
+        row.actionDate,
+        row.endDate,
+        row.originalDate,
+        row.status,
+        row.approver,
+        row.requestDate,
+        row.responseDate,
+      ].map((v) => `"${v || ""}"`);
+      csvRows.push(values.join(","));
+    });
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "upcoming_report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="Upcoming">
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
@@ -96,9 +152,7 @@ export default function User() {
       <div className="headSection">
         <div className="compliance-score">Upcoming</div>
         <div className="rightGroup">
-          <div className="buttonGroup">
-           
-          </div>
+          <div className="buttonGroup"></div>
         </div>
       </div>
 
@@ -121,16 +175,21 @@ export default function User() {
           </button>
         </div>
 
-        <div className="table-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div
+          className="table-actions"
+          style={{ display: "flex", alignItems: "center", gap: "10px" }}
+        >
           <div className="search-box">
             <input
-              placeholder="Search by Name or Email"
+              placeholder="Search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             <FaSearch className="search-icon" />
           </div>
-          <button className="action-btn primary">Export</button>
+          <button className="action-btn primary" onClick={exportToCSV}>
+            Export
+          </button>
         </div>
       </div>
 
@@ -158,20 +217,20 @@ export default function User() {
         <tbody>
           {currentRows.map((row, index) => (
             <tr key={index}>
-              <td><div className="label">Id</div><div className="value">{row.id}</div></td>
-              <td><div className="label">Email</div><div className="value">{row.email}</div></td>
-              <td><div className="label">Department</div><div className="value">{row.department}</div></td>
-              <td><div className="label">Act</div><div className="value">{row.act}</div></td>
-              <td><div className="label">Name</div><div className="value">{row.name}</div></td>
-              <td><div className="label">Description</div><div className="value">{row.description}</div></td>
-              <td><div className="label">Start Date</div><div className="value">{row.startDate}</div></td>
-              <td><div className="label">Action Date</div><div className="value">{row.actionDate}</div></td>
-              <td><div className="label">End Date</div><div className="value">{row.endDate}</div></td>
-              <td><div className="label">Original Date</div><div className="value">{row.originalDate}</div></td>
-              <td><div className="label">Status</div><div className="value">{row.status}</div></td>
-              <td><div className="label">Approver</div><div className="value">{row.approver}</div></td>
-              <td><div className="label">Request Date</div><div className="value">{row.requestDate}</div></td>
-              <td><div className="label">Response Date</div><div className="value">{row.responseDate}</div></td>
+              <td>{row.id}</td>
+              <td>{row.email}</td>
+              <td>{row.department}</td>
+              <td>{row.act}</td>
+              <td>{row.name}</td>
+              <td>{row.description}</td>
+              <td>{row.startDate}</td>
+              <td>{row.actionDate}</td>
+              <td>{row.endDate}</td>
+              <td>{row.originalDate}</td>
+              <td>{row.status}</td>
+              <td>{row.approver}</td>
+              <td>{row.requestDate}</td>
+              <td>{row.responseDate}</td>
             </tr>
           ))}
         </tbody>

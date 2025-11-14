@@ -1,4 +1,3 @@
-// edit-dept.jsx
 import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
@@ -15,6 +14,8 @@ export default function EditDept() {
 
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState("");
+  const [errorVisible, setErrorVisible] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -45,8 +46,13 @@ export default function EditDept() {
   // ✅ Save Changes
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Updated Department:", formData);
 
+    if (!formData.departmentName.trim()) {
+      setErrors({ api: "Department name cannot be blank." });
+      return;
+    }
+
+    console.log("Updated Department:", formData);
     setSuccessMsg("✅ Department updated successfully!");
 
     setTimeout(() => navigate("/department"), 1200);
@@ -54,26 +60,68 @@ export default function EditDept() {
 
   // ✅ Delete Department
   const handleDelete = () => {
+    if (!formData.departmentName) return;
     console.log("Department deleted:", formData.departmentName);
-    navigate("/department");
+    setSuccessMsg("✅ Department deleted successfully!");
+    setTimeout(() => navigate("/department"), 1000);
   };
 
   // ✅ Backup
   const handleBackup = () => {
+    if (!formData.departmentName) return;
     console.log("Backup taken for:", formData.departmentName);
     alert("✅ Backup taken!");
   };
 
+  // ✅ Auto-hide error
+  useEffect(() => {
+    if (errors.api) {
+      setErrorVisible(true);
+      const timer = setTimeout(() => setErrorVisible(false), 4500);
+      const clearTimer = setTimeout(() => setErrors({}), 5000);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [errors.api]);
+
+  // ✅ Auto-hide success
+  useEffect(() => {
+    if (successMsg) {
+      setSuccessVisible(true);
+      const timer = setTimeout(() => setSuccessVisible(false), 4500);
+      const clearTimer = setTimeout(() => setSuccessMsg(""), 5000);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [successMsg]);
+
   return (
-    <div className="edit-bu">
+    <div className="edit-dept">
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
 
       <div className="form-container">
         <h2>Edit Department</h2>
 
-        <form onSubmit={handleSubmit} className="add-user-form">
+        {/* ✅ Unified top messages */}
+        <div className="messages-top" style={{ margin: "0 auto 1rem auto", width: "50%" }}>
+          {errors.api && (
+            <div className={`login-error ${!errorVisible ? "fade-out" : ""}`}>
+              {errors.api}
+            </div>
+          )}
+          {successMsg && (
+            <div className={`success-msg ${!successVisible ? "fade-out" : ""}`}>
+              {successMsg}
+            </div>
+          )}
+        </div>
 
+        <form onSubmit={handleSubmit} className="add-user-form">
           <label>
             Department Name
             <input
@@ -81,11 +129,9 @@ export default function EditDept() {
               name="departmentName"
               value={formData.departmentName}
               onChange={handleInputChange}
+              autoComplete="off"
             />
           </label>
-
-          {errors.api && <div className="login-error">{errors.api}</div>}
-          {successMsg && <div className="success-msg">{successMsg}</div>}
 
           <div className="action-buttons">
             <button type="submit" className="submit-btn">
@@ -105,7 +151,6 @@ export default function EditDept() {
               Take Backup
             </button>
           </div>
-
         </form>
       </div>
     </div>

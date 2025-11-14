@@ -1,5 +1,4 @@
-// NotFound.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
 import "./Dashboard.css";
@@ -14,6 +13,9 @@ export default function NotFound() {
 
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState("");
+  const [errorVisible, setErrorVisible] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -22,21 +24,74 @@ export default function NotFound() {
     setSuccessMsg("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
     if (!formData.act) newErrors.act = "Act is required";
-    if (!formData.complianceName) newErrors.complianceName = "Compliance Name is required";
-    if (!formData.description) newErrors.description = "Description is required";
+    if (!formData.complianceName)
+      newErrors.complianceName = "Compliance Name is required";
+    if (!formData.description)
+      newErrors.description = "Description is required";
 
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
-    // TODO: replace with API submission
-    console.log("Form submitted:", formData);
-    setSuccessMsg("✅ Compliance created successfully!");
-    setFormData({ act: "", complianceName: "", description: "" });
+    try {
+      setLoading(true);
+      setErrors({});
+      setSuccessMsg("");
+
+      const response = await fetch("http://127.0.0.1:5000/form/submit_", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setErrors({ api: result.error || "Failed to submit form" });
+        return;
+      }
+
+      setSuccessMsg("✅ " + result.message);
+      setFormData({ act: "", complianceName: "", description: "" });
+    } catch (error) {
+      console.error("Submission error:", error);
+      setErrors({ api: "Something went wrong. Please try again." });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Auto-hide error
+  useEffect(() => {
+    if (errors.api) {
+      setErrorVisible(true);
+      const timer = setTimeout(() => setErrorVisible(false), 4500);
+      const clearTimer = setTimeout(() => setErrors({}), 5000);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [errors.api]);
+
+  // Auto-hide success
+  useEffect(() => {
+    if (successMsg) {
+      setSuccessVisible(true);
+      const timer = setTimeout(() => setSuccessVisible(false), 4500);
+      const clearTimer = setTimeout(() => setSuccessMsg(""), 5000);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [successMsg]);
 
   return (
     <div className="not-found-page">
@@ -45,6 +100,24 @@ export default function NotFound() {
         <UserHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
         <main style={{ flex: 1, padding: "1rem 2rem", overflowY: "auto" }}>
           <h2>Add Compliance</h2>
+
+          {/* Messages */}
+          <div
+            className="messages-top"
+            style={{ margin: "0 auto 1rem auto", width: "50%" }}
+          >
+            {errors.api && (
+              <div className={`login-error ${!errorVisible ? "fade-out" : ""}`}>
+                {errors.api}
+              </div>
+            )}
+            {successMsg && (
+              <div className={`success-msg ${!successVisible ? "fade-out" : ""}`}>
+                {successMsg}
+              </div>
+            )}
+          </div>
+
           <form className="add-user-form" onSubmit={handleSubmit}>
             <label>
               Act
@@ -65,7 +138,9 @@ export default function NotFound() {
                 value={formData.complianceName}
                 onChange={handleInputChange}
               />
-              {errors.complianceName && <span className="error">{errors.complianceName}</span>}
+              {errors.complianceName && (
+                <span className="error">{errors.complianceName}</span>
+              )}
             </label>
 
             <label className="full-width">
@@ -76,13 +151,13 @@ export default function NotFound() {
                 value={formData.description}
                 onChange={handleInputChange}
               />
-              {errors.description && <span className="error">{errors.description}</span>}
+              {errors.description && (
+                <span className="error">{errors.description}</span>
+              )}
             </label>
 
-            {successMsg && <span className="success-msg">{successMsg}</span>}
-
-            <button type="submit" className="submit-btn">
-              Create
+            <button type="submit" className="submit-btn" disabled={loading}>
+              {loading ? "Submitting..." : "Submit"}
             </button>
           </form>
         </main>

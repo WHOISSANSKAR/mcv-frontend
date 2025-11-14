@@ -3,18 +3,21 @@ import Sidebar from "./admin/Sidebar";
 import { useNavigate } from "react-router-dom";
 import "./admin/Dashboard.css";
 
-export default function CompanyForm() {
+export default function AddAdminForm() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    contact: "",
     company_name: "",
-    cin: "",
-    subscribers: 0,
-    subscribersInput: "0",
-    end_of_subscription: ""
+    subscribers: 2,
+    subscribersInput: "2",
+    department: "",
+    business_unit: "",
+    escalation_mail: "",
   });
 
-  const [file, setFile] = useState(null); // UI only, ignored for now
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState("");
   const navigate = useNavigate();
@@ -48,44 +51,61 @@ export default function CompanyForm() {
     setErrors({});
     setSuccessMsg("");
 
-    // Validate required fields
-    if (!formData.company_name || !formData.cin) {
-      setErrors({ api: "Company Name and CIN are required" });
-      return;
+    const required = [
+      "name",
+      "email",
+      "contact",
+      "company_name",
+      "department",
+      "business_unit",
+    ];
+
+    for (const field of required) {
+      if (!formData[field]) {
+        setErrors({ api: "All required fields must be filled" });
+        return;
+      }
     }
 
     const payload = {
+      name: formData.name,
+      email: formData.email,
+      contact: formData.contact,
       company_name: formData.company_name,
-      cin: formData.cin,
-      subscribers: formData.subscribers || 2, // default 2 if empty
-      govt_document: "NA", // file ignored for now
-      end_of_subscription: formData.end_of_subscription || null
+      subscribers: formData.subscribers || 2,
+      department: formData.department,
+      business_unit: formData.business_unit,
+      escalation_mail: formData.escalation_mail || "",
     };
 
     try {
-      const response = await fetch("http://localhost:5000/form/submit", {
+      const response = await fetch("http://localhost:5000/user/add_admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setErrors({ api: data.error || "Failed to submit form" });
+        setErrors({ api: data.error || "Failed to add admin" });
       } else {
-        setSuccessMsg("✅ Company details submitted successfully!");
+        setSuccessMsg("✅ Admin created successfully!");
+
         setFormData({
+          name: "",
+          email: "",
+          contact: "",
           company_name: "",
-          cin: "",
-          subscribers: 0,
-          subscribersInput: "0",
-          end_of_subscription: ""
+          subscribers: 2,
+          subscribersInput: "2",
+          department: "",
+          business_unit: "",
+          escalation_mail: "",
         });
-        setFile(null);
       }
     } catch (err) {
-      console.error("Error submitting form:", err);
+      console.error("Error submitting admin:", err);
       setErrors({ api: "Failed to submit form. Please try again." });
     }
   };
@@ -94,6 +114,7 @@ export default function CompanyForm() {
     <div className="user_group">
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
 
+      {/* ✅ Replaced Header with Logo */}
       <div className="top-logo-container" style={{ padding: "1rem 2rem" }}>
         <img
           src="/logo_black.png"
@@ -104,12 +125,9 @@ export default function CompanyForm() {
       </div>
 
       <div className="form-container">
-        <h2>Company Registration</h2>
+        <h2>Add Admin</h2>
 
-        <div
-          className="messages-top"
-          style={{ margin: "0 auto 1rem auto", width: "50%" }}
-        >
+        <div className="messages-top" style={{ margin: "0 auto 1rem auto", width: "50%" }}>
           {errors.api && <div className="login-error">{errors.api}</div>}
           {successMsg && <div className="success-msg">{successMsg}</div>}
         </div>
@@ -117,23 +135,23 @@ export default function CompanyForm() {
         <form onSubmit={handleSubmit} className="add-user-form">
 
           <label>
-            Company Name
-            <input
-              type="text"
-              name="company_name"
-              value={formData.company_name}
-              onChange={handleInputChange}
-            />
+            Name*
+            <input type="text" name="name" value={formData.name} onChange={handleInputChange} />
           </label>
 
           <label>
-            CIN
-            <input
-              type="text"
-              name="cin"
-              value={formData.cin}
-              onChange={handleInputChange}
-            />
+            Email*
+            <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
+          </label>
+
+          <label>
+            Contact*
+            <input type="text" name="contact" value={formData.contact} onChange={handleInputChange} />
+          </label>
+
+          <label>
+            Company Name*
+            <input type="text" name="company_name" value={formData.company_name} onChange={handleInputChange} />
           </label>
 
           <label>
@@ -145,44 +163,37 @@ export default function CompanyForm() {
               value={formData.subscribersInput}
               onChange={handleInputChange}
               onFocus={() => {
-                if (formData.subscribersInput === "0") {
+                if (formData.subscribersInput === "2") {
                   setFormData((prev) => ({ ...prev, subscribersInput: "" }));
                 }
               }}
               onBlur={() => {
                 if (formData.subscribersInput === "") {
-                  setFormData((prev) => ({
-                    ...prev,
-                    subscribersInput: "0",
-                    subscribers: 2,
-                  }));
+                  setFormData((prev) => ({ ...prev, subscribersInput: "2", subscribers: 2 }));
                 }
               }}
             />
           </label>
 
           <label>
-            End of Subscription
+            Department*
+            <input type="text" name="department" value={formData.department} onChange={handleInputChange} />
+          </label>
+
+          <label>
+            Business Unit*
+            <input type="text" name="business_unit" value={formData.business_unit} onChange={handleInputChange} />
+          </label>
+
+          <label>
+            Escalation Email
             <input
-              type="date"
-              name="end_of_subscription"
-              value={formData.end_of_subscription}
+              type="email"
+              name="escalation_mail"
+              value={formData.escalation_mail}
               onChange={handleInputChange}
             />
           </label>
-
-          <div className="file-wrapper">
-            <label className="file-label">Govt Document</label>
-            <label className="file-upload-label">
-              <input
-                type="file"
-                onChange={(e) => setFile(e.target.files[0])}
-              />
-              <span className="custom-file-btn">
-                {file ? file.name : "Choose File"}
-              </span>
-            </label>
-          </div>
 
           <button type="submit" className="submit-btn">Submit</button>
         </form>

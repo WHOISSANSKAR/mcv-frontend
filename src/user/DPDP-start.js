@@ -1,25 +1,29 @@
 // PDPDActStart.jsx
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import UserHeader from "./UserHeader";
 import UserSidebar from "./UserSidebar";
 
 export default function DPDPstart() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const assessments = Array.from({ length: 10 }, (_, i) => `assessment${i + 1}`);
+
+  const handleStart = (assessmentName) => {
+    // Save assessment name in localStorage
+    localStorage.setItem("currentAssessment", assessmentName);
+    // Redirect to /assessemnt page
+    navigate("/assessment"); // correct spelling
+
+  };
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
       <UserSidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <UserHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-        <main
-          style={{
-            flex: 1,
-            padding: "1rem 2rem",
-            overflowY: "auto",
-          }}
-        >
+        <main style={{ flex: 1, padding: "1rem 2rem", overflowY: "auto" }}>
           <h1 style={{ marginBottom: "1.5rem" }}>Assessment Score</h1>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -42,7 +46,7 @@ export default function DPDPstart() {
                         borderRadius: "4px",
                         cursor: "pointer",
                       }}
-                      onClick={() => alert(`Starting ${a}`)}
+                      onClick={() => handleStart(a)}
                     >
                       Start
                     </button>

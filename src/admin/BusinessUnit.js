@@ -74,25 +74,55 @@ export default function BusinessUnit() {
     fetchData();
   }, [navigate]);
 
-  // ✅ Filter by BU name only
+  // ✅ Search across all columns
   const filteredData = data.filter((row) =>
-    (row.businessUnitName || "").toLowerCase().includes(searchTerm.toLowerCase())
+    Object.values(row)
+      .join(" ")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
   );
 
   const currentRows = filteredData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
 
-  // ✅ Add Unit button
   const handleAddUnit = () => {
     localStorage.setItem("page", "1");
     navigate("/add-bu");
   };
 
-  // ✅ Edit Handler — Stores BU Name + ID in localStorage
   const handleEdit = (row) => {
     localStorage.setItem("editBusinessUnitName", row.businessUnitName);
     localStorage.setItem("editBusinessUnitId", row.businessUnitId);
     navigate("/edit-bu");
+  };
+
+  // ✅ Export function
+  const handleExport = () => {
+    if (!filteredData.length) return alert("No data to export");
+
+    const headers = ["Business Unit ID", "Business Unit Name", "User Name"];
+    const csvRows = [headers.join(",")];
+
+    filteredData.forEach((row) => {
+      const values = [
+        row.businessUnitId,
+        row.businessUnitName,
+        row.userName,
+      ].map((v) => `"${v}"`);
+      csvRows.push(values.join(","));
+    });
+
+    const blob = new Blob([csvRows.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "business_units.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -133,7 +163,7 @@ export default function BusinessUnit() {
         <div className="table-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div className="search-box">
             <input
-              placeholder="Search by Business Unit"
+              placeholder="Search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -144,7 +174,9 @@ export default function BusinessUnit() {
             + Add Unit
           </button>
 
-          <button className="action-btn primary">Export</button>
+          <button className="action-btn primary" onClick={handleExport}>
+            Export
+          </button>
         </div>
       </div>
 
@@ -178,10 +210,7 @@ export default function BusinessUnit() {
                     <td>{row.businessUnitName}</td>
                     <td>{row.userName}</td>
                     <td>
-                      <button
-                        className="edit-btn"
-                        onClick={() => handleEdit(row)}  // ✅ Updated
-                      >
+                      <button className="edit-btn" onClick={() => handleEdit(row)}>
                         Edit
                       </button>
                     </td>

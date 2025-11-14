@@ -7,48 +7,50 @@ import "./Dashboard.css";
 
 export default function ComplianceList() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const navigate = useNavigate();
-
-  const initialData = [
-    {
-      complianceId: "REGSTFACTORIES01",
-      act: "FACTORIES ACT",
-      particular: "REFER TO STATE RULES - I",
-      description: "RETURN: ANNUAL RETURN",
-    },
-    {
-      complianceId: "REGSTFACTORIES02",
-      act: "FACTORIES ACT",
-      particular: "REFER TO STATE RULES - II",
-      description: "RETURN: APPLICATION FOR RENEWAL OF LICENSE",
-    },
-    {
-      complianceId: "REGSTFACTORIES03",
-      act: "FACTORIES ACT",
-      particular: "REFER TO STATE RULES - III",
-      description: "RETURN: HALF YEARLY RETURN",
-    },
-  ];
-
-  const [data] = useState(initialData);
+  const [data, setData] = useState([]); // ✅ Dynamic backend data
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [searchTerm, setSearchTerm] = useState("");
+
   const [selectedAct, setSelectedAct] = useState("Statutory Compliance");
+  const [selectedCountry, setSelectedCountry] = useState("");
 
- useEffect(() => {
-  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  if (!isLoggedIn) {
-    navigate("/", { replace: true });
-  }
+  const navigate = useNavigate();
 
-  // ✅ Get the exact name from localStorage
-  const savedAct = localStorage.getItem("selectedAct");
-  if (savedAct) {
-    setSelectedAct(savedAct); // directly show exact name
-  }
-}, [navigate]);
+  // ✅ Load country + act + fetch data
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    if (!isLoggedIn) {
+      navigate("/", { replace: true });
+      return;
+    }
 
+    const act = localStorage.getItem("selectedAct");
+    const country = localStorage.getItem("selectedCountry");
 
+    if (act) setSelectedAct(act);
+    if (country) setSelectedCountry(country);
+
+    if (act && country) {
+      fetch(
+        `http://localhost:5000/compliance/filter?country=${country}&act=${act}`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.records) {
+            const formatted = data.records.map((item) => ({
+              complianceId: "1",
+              act: act,
+              particular: item.cmplst_particular,
+              description: item.cmplst_description,
+            }));
+            setData(formatted);
+          }
+        })
+        .catch((err) => console.error("API error:", err));
+    }
+  }, [navigate]);
+
+  // ✅ Search
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter(
@@ -60,6 +62,7 @@ export default function ComplianceList() {
     );
   }, [data, searchTerm]);
 
+  // ✅ Sorting logic
   const requestSort = (key) => {
     let direction = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc")
@@ -82,6 +85,7 @@ export default function ComplianceList() {
       sortable.sort((a, b) => {
         const valA = a[sortConfig.key].toLowerCase();
         const valB = b[sortConfig.key].toLowerCase();
+
         if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
         if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
@@ -89,6 +93,12 @@ export default function ComplianceList() {
     }
     return sortable;
   }, [filteredData, sortConfig]);
+
+  // ✅ Save clicked row + redirect
+  const handleAddClick = (row) => {
+    localStorage.setItem("selectedComplianceRow", JSON.stringify(row));
+    navigate("/add_compliance");
+  };
 
   return (
     <div className="StatutoryInfo">
@@ -102,6 +112,7 @@ export default function ComplianceList() {
         </div>
       </div>
 
+      {/* Search & field controls */}
       <div
         className="table-header"
         style={{
@@ -110,14 +121,7 @@ export default function ComplianceList() {
           alignItems: "center",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            marginLeft: "45px",
-          }}
-        ></div>
+        <div></div>
 
         <div
           className="table-actions"
@@ -131,17 +135,19 @@ export default function ComplianceList() {
             />
             <FaSearch className="search-icon" />
           </div>
-          
         </div>
       </div>
 
+      {/* TABLE */}
       <table className="data-table">
         <thead>
           <tr>
             <th onClick={() => requestSort("complianceId")}>
               Compliance ID {getSortIcon("complianceId")}
             </th>
-            <th onClick={() => requestSort("act")}>Act {getSortIcon("act")}</th>
+            <th onClick={() => requestSort("act")}>
+              Act {getSortIcon("act")}
+            </th>
             <th onClick={() => requestSort("particular")}>
               Particular {getSortIcon("particular")}
             </th>
@@ -151,6 +157,7 @@ export default function ComplianceList() {
             <th>Action</th>
           </tr>
         </thead>
+
         <tbody>
           {sortedData.length > 0 ? (
             sortedData.map((item, index) => (
@@ -159,10 +166,12 @@ export default function ComplianceList() {
                 <td>{item.act}</td>
                 <td>{item.particular}</td>
                 <td>{item.description}</td>
+
+                {/* ✅ Add button with save functionality */}
                 <td>
                   <button
                     className="action-btn primary"
-                    onClick={() => navigate("/add_compliance")}
+                    onClick={() => handleAddClick(item)}
                   >
                     Add
                   </button>

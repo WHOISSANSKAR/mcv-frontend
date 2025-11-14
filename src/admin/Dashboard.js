@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
 import {
   ResponsiveContainer,
   LineChart,
@@ -15,15 +15,12 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaEdit, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import "./Dashboard.css";
-import "./ESGDashboard.css"; // ✅ for ESG styles
 
-// ---------------- Initial Data ----------------
 const initialStats = { Overdue: 1, Upcoming: 2, Approved: 1, Compliance: 12 };
 
 const initialDailyTraffic = [
@@ -53,43 +50,122 @@ const pieTrafficData = [
 
 const COLORS = ["#7c3aed", "#f50bed", "#d02cec"];
 
-// ---------------- Utils ----------------
-function numberFmt(n) {
-  return n >= 1000 ? (n / 1000).toFixed(1) + "K" : n;
-}
-
-// ---------------- Component ----------------
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [stats] = useState(initialStats);
   const [OverdueApproved] = useState(initialOverdueApproved);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [newTaskText, setNewTaskText] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  // ✅ Load user info from localStorage
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    if (savedUser) setUser(JSON.parse(savedUser));
   }, []);
 
-  // ✅ Fix calendar overflow
+  const formatDate = (dateObj) => {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const d = String(dateObj.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const parseBackendDate = (dateStr) => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return null;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
+  const fetchEvents = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/calendar/list", {
+        method: "GET",
+        credentials: "include",
+      });
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
+        const mappedTasks = data.map((t) => ({
+          id: t.cal_id,
+          cal_event: t.cal_event || "No Event",
+          cal_date: parseBackendDate(t.cal_date),
+        }));
+
+        setTasks(mappedTasks);
+
+        const formattedEvents = mappedTasks.map((t) => ({
+          title: t.cal_event,
+          start: t.cal_date,
+        }));
+
+        setEvents(formattedEvents);
+      } else {
+        console.error("Invalid data structure:", data);
+      }
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const calendarEl = document.querySelector(".calendar-wrapper .fc");
-    if (calendarEl) calendarEl.style.overflow = "hidden";
+    fetchEvents();
   }, []);
+
+  const addTask = async (e) => {
+    e.preventDefault();
+    if (!newTaskText || !selectedDate) return;
+
+    try {
+      const res = await fetch("http://localhost:5000/calendar/add", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: selectedDate, event: newTaskText }),
+      });
+      const body = await res.json();
+      if (res.ok) {
+        await fetchEvents();
+        setNewTaskText("");
+        setShowModal(false);
+      } else {
+        alert(body.error || "Error adding event");
+      }
+    } catch (err) {
+      console.error("Network error:", err);
+      alert("Network error");
+    }
+  };
+
+  const handleDateClick = (info) => {
+    const date = info.date;
+    const formattedDate = `${date.getFullYear()}-${String(
+      date.getMonth() + 1
+    ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    setSelectedDate(formattedDate);
+    setShowModal(true);
+  };
+
+  const tasksForDate = tasks.filter((t) => t.cal_date === selectedDate);
 
   return (
     <div className="Dashboard">
-      {/* Sidebar */}
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-
-      {/* Header */}
       <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
 
-      {/* Head Section */}
+      {/* HEADER SECTION */}
       <div className="headSection">
         <div></div>
         <div className="rightGroup">
@@ -102,12 +178,11 @@ export default function Dashboard() {
           </div>
           <div className="buttonGroup">
             <button
-  className="headBtn"
-  onClick={() => window.location.href = "/user_dashboard"}
->
-  + Compliance Zone
-</button>
-
+              className="headBtn"
+              onClick={() => (window.location.href = "/user_dashboard")}
+            >
+              + Compliance Zone
+            </button>
             <button className="headBtn" onClick={() => navigate("/ESG")}>
               + ESG
             </button>
@@ -115,21 +190,19 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Greeting & Compliance Score Bar */}
+      {/* WELCOME */}
       <div className="welcome-bar">
         <div className="welcome-user">
-  Hello,<br />
-  {user ? user.usrlst_name : "Admin"}
-</div>
-
+          Hello,
+          <br />
+          {user ? user.usrlst_name : "Admin"}
+        </div>
         <div className="welcome-score">Current Compliance : 100%</div>
-        <div className="welcome-right"></div>
       </div>
 
-      {/* Charts Section */}
       <section className="charts">
         <div className="chart-row top">
-          {/* Recent Compliance Table */}
+          {/* RECENT COMPLIANCE */}
           <div className="chart-card">
             <h3>Recent Compliance</h3>
             <table className="compliance-table">
@@ -161,7 +234,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Compliance Track Line Chart */}
+          {/* COMPLIANCE TRACK */}
           <div className="chart-card">
             <h3>Compliance Track</h3>
             <ResponsiveContainer width="100%" height={240}>
@@ -188,23 +261,68 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
 
-          {/* Calendar */}
+          {/* CALENDAR */}
           <div className="chart-card calendar-card">
             <h3>Compliance Calendar</h3>
             <div className="calendar-wrapper">
+              {loading && <div className="loading">Loading...</div>}
+
               <FullCalendar
-                plugins={[dayGridPlugin]}
+                plugins={[dayGridPlugin, interactionPlugin]}
                 initialView="dayGridMonth"
-                height="100%"
+                events={events}
+                dateClick={handleDateClick}
                 headerToolbar={{ left: "title", center: "", right: "prev,next" }}
+                height="100%"
+                eventContent={() => null}
+               dayCellContent={(arg) => {
+  const date = arg.date;
+  const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  const dayTasks = tasks.filter((t) => t.cal_date === dateStr);
+
+  if (dayTasks.length >= 2) {
+    return {
+      html: `
+        <div class="fc-daygrid-day-number">${arg.dayNumberText}</div>
+        <div class="task-dot"></div>
+      `,
+    };
+  }
+
+  if (dayTasks.length === 1) {
+    const t = dayTasks[0];
+    const displayText = t.cal_event.length > 15 ? t.cal_event.slice(0, 15) + "..." : t.cal_event;
+
+    return {
+      html: `
+        <div class="fc-daygrid-day-number" style="text-align:center;">${arg.dayNumberText}</div>
+        <div style="
+          max-width: 70px; /* width for calendar cell */
+          margin: 2px auto 0 auto;
+          font-size: 10px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          text-align: center;
+        " title="${t.cal_event}">
+          ${displayText}
+        </div>
+      `,
+    };
+  }
+
+  return {
+    html: `<div class="fc-daygrid-day-number">${arg.dayNumberText}</div>`,
+  };
+}}
+
               />
             </div>
           </div>
         </div>
 
-        {/* Bottom Row */}
+        {/* BOTTOM CHARTS */}
         <div className="chart-row bottom">
-          {/* Compliance Health Pie Chart */}
           <div className="chart-card">
             <h3>Compliance Health</h3>
             <ResponsiveContainer width="100%" height={200}>
@@ -229,23 +347,15 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
 
-          {/* Alerts & Notifications */}
           <div className="chart-card">
             <h3>Alerts & Notifications</h3>
             <ul className="alerts-list">
-              <li className="alert-item overdue">
-                ❗ 2 audits overdue (Finance, IT)
-              </li>
-              <li className="alert-item expiring">
-                ⚠️ Vendor X compliance certificate expiring in 30 days
-              </li>
-              <li className="alert-item success">
-                ✅ New GDPR regulation update applied successfully
-              </li>
+              <li className="alert-item overdue">❗ 2 audits overdue (Finance, IT)</li>
+              <li className="alert-item expiring">⚠️ Vendor X compliance certificate expiring in 30 days</li>
+              <li className="alert-item success">✅ New GDPR regulation update applied successfully</li>
             </ul>
           </div>
 
-          {/* Risk Heatmap */}
           <div className="chart-card">
             <h3>Risk Heatmap</h3>
             <table className="heatmap-table">
@@ -286,7 +396,7 @@ export default function Dashboard() {
             </table>
           </div>
 
-          {/* Tasks & Workflow */}
+          {/* TASKS TABLE */}
           <div className="chart-card">
             <div className="tasks-header">
               <h3>Tasks & Workflow</h3>
@@ -295,6 +405,7 @@ export default function Dashboard() {
               </div>
               <span className="progress-text">60%</span>
             </div>
+
             <table className="tasks-table">
               <thead>
                 <tr>
@@ -304,31 +415,135 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Update data privacy policy</td>
-                  <td>A. Patel</td>
-                  <td>20-Sep</td>
-                </tr>
-                <tr>
-                  <td>Complete PCI-DSS audit</td>
-                  <td>R. Singh</td>
-                  <td>25-Sep</td>
-                </tr>
-                <tr>
-                  <td>Refresh GDPR training</td>
-                  <td>S. Kumar</td>
-                  <td>30-Sep</td>
-                </tr>
-                <tr>
-                  <td>Renew ISO 27001 certificate</td>
-                  <td>L. Chen</td>
-                  <td>05-Oct</td>
-                </tr>
+                {tasks.map((t) => (
+                  <tr key={t.id}>
+                    <td>{t.cal_event}</td>
+                    <td>{user ? user.usrlst_name : "Admin"}</td>
+                    <td>{t.cal_date}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       </section>
+
+      {/* TASK MODAL */}
+      {showModal && (
+        <div className="ct-modal-backdrop" onClick={() => setShowModal(false)}>
+          <div
+            className="ct-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxHeight: "400px", overflowY: "auto" }}
+          >
+            <h3 style={{ textAlign: "center" }}>Tasks for {selectedDate}</h3>
+
+            <form onSubmit={addTask}>
+              <input
+                type="text"
+                value={newTaskText}
+                onChange={(e) => setNewTaskText(e.target.value)}
+                placeholder="Enter task name"
+                required
+              />
+              <button type="submit">Add Task</button>
+            </form>
+
+            <h4>Existing Tasks</h4>
+            {tasksForDate.length > 0 ? (
+              <ul className="task-list" style={{ maxHeight: "250px", overflowY: "auto" }}>
+                {tasksForDate.map((t) => (
+                  <TaskItem key={t.id} task={t} refresh={fetchEvents} selectedDate={selectedDate} />
+                ))}
+              </ul>
+            ) : (
+              <p className="no-tasks">No tasks yet for this date</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+/* -------- TaskItem Component -------- */
+function TaskItem({ task, refresh, selectedDate }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(task.cal_event);
+
+  const handleUpdate = async () => {
+    if (!editText.trim()) return;
+    try {
+      const res = await fetch(`http://localhost:5000/calendar/edit/${task.id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: selectedDate, event: editText }),
+      });
+      const body = await res.json();
+      if (res.ok) {
+        setIsEditing(false);
+        await refresh();
+      } else {
+        alert(body.error || "Failed to update event");
+      }
+    } catch (err) {
+      alert("Network error while updating");
+      console.error(err);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/calendar/delete/${task.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const body = await res.json();
+      if (res.ok) {
+        await refresh();
+      } else {
+        alert(body.error || "Failed to delete event");
+      }
+    } catch (err) {
+      alert("Network error while deleting");
+      console.error(err);
+    }
+  };
+
+  return (
+    <li
+      className="task-item"
+      style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}
+    >
+      {isEditing ? (
+        <>
+          <input
+            type="text"
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            style={{ flex: 1 }}
+          />
+          <button onClick={handleUpdate} title="Save Task">
+            Save
+          </button>
+          <button onClick={() => setIsEditing(false)} title="Cancel">
+            Cancel
+          </button>
+        </>
+      ) : (
+        <>
+          <span style={{ flex: 1, wordBreak: "break-word" }}>{task.cal_event}</span>
+          <div className="task-actions" style={{ display: "flex", gap: "4px" }}>
+            <button onClick={() => setIsEditing(true)} title="Edit Task">
+              <FaEdit />
+            </button>
+            <button onClick={handleDelete} title="Delete Task">
+              <FaTrash />
+            </button>
+          </div>
+        </>
+      )}
+    </li>
   );
 }

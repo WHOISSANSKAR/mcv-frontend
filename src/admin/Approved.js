@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { FaSearch, FaPlusCircle, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +9,7 @@ export default function Approved() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
+  // Sample data
   const initialData = Array.from({ length: 35 }, (_, i) => ({
     id: i + 1,
     email: `user${i + 1}@mail.com`,
@@ -32,15 +33,16 @@ export default function Approved() {
   const [searchTerm, setSearchTerm] = useState("");
   const rowsPerPage = 8;
 
+  // Search across all columns
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
-    return data.filter(
-      (item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const term = searchTerm.toLowerCase();
+    return data.filter((item) =>
+      Object.values(item).some((val) => val.toString().toLowerCase().includes(term))
     );
   }, [data, searchTerm]);
 
+  // Sorting logic
   const sortedData = useMemo(() => {
     let sortable = [...filteredData];
     if (sortConfig.key) {
@@ -66,11 +68,45 @@ export default function Approved() {
     return sortConfig.direction === "asc" ? <FaSortUp className="sort-icon" /> : <FaSortDown className="sort-icon" />;
   };
 
+  // Export to CSV
+  const exportToCSV = () => {
+    if (!sortedData || sortedData.length === 0) return;
+
+    const headers = [
+      "Id", "Email", "Department", "Act", "Name", "Description", "Start Date",
+      "Action Date", "End Date", "Original Date", "Status", "Approver", "Request Date", "Response Date"
+    ];
+
+    const csvRows = [headers.join(",")];
+
+    sortedData.forEach((row) => {
+      const values = [
+        row.id, row.email, row.department, row.act, row.name, row.description,
+        row.startDate, row.actionDate, row.endDate, row.originalDate, row.status,
+        row.approver, row.requestDate, row.responseDate
+      ].map((val) => `"${val || ""}"`);
+      csvRows.push(values.join(","));
+    });
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "approved_records.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Pagination
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
 
+  // Auth check
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -87,9 +123,7 @@ export default function Approved() {
       <div className="headSection">
         <div className="compliance-score">Approved</div>
         <div className="rightGroup">
-          <div className="buttonGroup">
-           
-          </div>
+          <div className="buttonGroup"></div>
         </div>
       </div>
 
@@ -104,14 +138,13 @@ export default function Approved() {
         <div className="table-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div className="search-box">
             <input
-              placeholder="Search by Name or Email"
+              placeholder="Search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             <FaSearch className="search-icon" />
           </div>
-
-          <button className="action-btn primary">Export</button>
+          <button className="action-btn primary" onClick={exportToCSV}>Export</button>
         </div>
       </div>
 
@@ -132,6 +165,7 @@ export default function Approved() {
             <th>Approver</th>
             <th>Request Date</th>
             <th>Response Date</th>
+            <th>Action</th> {/* NEW COLUMN */}
           </tr>
         </thead>
 
@@ -152,6 +186,22 @@ export default function Approved() {
               <td><div className="label">Approver</div><div className="value">{row.approver}</div></td>
               <td><div className="label">Request Date</div><div className="value">{row.requestDate}</div></td>
               <td><div className="label">Response Date</div><div className="value">{row.responseDate}</div></td>
+
+              {/* NEW ACTION BUTTON */}
+              <td>
+                <span className="label">Action</span>
+                <span className="value">
+                  <button
+                    className="edit-btn"
+                    onClick={() => {
+                      localStorage.setItem("approveReportData", JSON.stringify(row));
+                      navigate("/approve_report");
+                    }}
+                  >
+                    View
+                  </button>
+                </span>
+              </td>
             </tr>
           ))}
         </tbody>
