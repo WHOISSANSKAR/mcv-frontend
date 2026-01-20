@@ -118,11 +118,17 @@ const LoginPage = ({ setIsLoggedIn }) => {
         setErrorKey((prev) => prev + 1);
         return;
       }
+// ✅ SAVE JWT TOKEN
+localStorage.setItem("token", data.token);
 
-      // ✅ Save user & login
-      setIsLoggedIn(true);
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("user", JSON.stringify(data.user));
+// ✅ SAVE USER INFO
+localStorage.setItem("user", JSON.stringify(data.user));
+
+// ✅ LOGIN FLAG
+localStorage.setItem("isLoggedIn", "true");
+
+// ✅ UPDATE APP STATE
+setIsLoggedIn(true);
 
       closeLoginModal();
 

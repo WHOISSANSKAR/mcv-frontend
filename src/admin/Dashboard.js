@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import "./Dashboard.css";
+const token = localStorage.getItem("token");
 
 const initialStats = { Overdue: 1, Upcoming: 2, Approved: 1, Compliance: 12 };
 
@@ -116,9 +117,12 @@ const customTicks = [paddedMin, paddedMin + step, max];
     setLoading(true);
     try {
       const res = await fetch("http://localhost:5000/calendar/list", {
-        method: "GET",
-        credentials: "include",
-      });
+  method: "GET",
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
+
       const data = await res.json();
 
       if (Array.isArray(data)) {
@@ -173,11 +177,14 @@ const customTicks = [paddedMin, paddedMin + step, max];
 
     try {
       const res = await fetch("http://localhost:5000/calendar/add", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: selectedDate, event: newTaskText }),
-      });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify({ date: selectedDate, event: newTaskText }),
+});
+
       const body = await res.json();
       if (res.ok) {
         await fetchEvents();
@@ -602,14 +609,16 @@ function TaskItem({ task, refresh, selectedDate }) {
   const handleUpdate = async () => {
     if (!editText.trim()) return;
     try {
-      const res = await fetch(`http://localhost:5000/calendar/edit/${task.id}`, {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: selectedDate, event: editText }),
-      });
-      const body = await res.json();
-      if (res.ok) {
+    const res = await fetch(`http://localhost:5000/calendar/edit/${task.id}`, {
+  method: "PUT",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+  },
+  body: JSON.stringify({ date: selectedDate, event: editText }),
+});
+const body = await res.json(); // ✅ now res is defined
+if (res.ok) {
         setIsEditing(false);
         await refresh();
       } else {
@@ -623,11 +632,13 @@ function TaskItem({ task, refresh, selectedDate }) {
 
   const handleDelete = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/calendar/delete/${task.id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const body = await res.json();
+    const res = await fetch(`http://localhost:5000/calendar/delete/${task.id}`, {
+  method: "DELETE",
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+  },
+});
+const body = await res.json(); 
       if (res.ok) {
         await refresh();
       } else {
