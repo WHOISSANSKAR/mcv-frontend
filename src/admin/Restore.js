@@ -21,14 +21,8 @@ export default function RestoreReplace() {
       return;
     }
 
-    console.log("Email to replace:", email);
-    console.log("Replace with user:", selectedUser);
-    console.log("Uploaded file:", file);
-
-    alert(
-      "User replaced successfully! MyComplianceView will be notified via email."
-    );
-    navigate("/"); // redirect after submit
+    alert("User replaced successfully! MyComplianceView will be notified.");
+    navigate("/");
   };
 
   useEffect(() => {
@@ -42,6 +36,7 @@ export default function RestoreReplace() {
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "Arial, sans-serif" }}>
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+
       <div style={{ flex: 1 }}>
         <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
 
@@ -56,11 +51,12 @@ export default function RestoreReplace() {
           }}
         >
           <h2 style={{ textAlign: "center", marginBottom: "25px", color: "#333" }}>
-            Restore & Replace User
+            Replace User
           </h2>
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            {/* Replace Email */}
+            
+            {/* Replace */}
             <label style={{ display: "flex", flexDirection: "column", fontWeight: "bold" }}>
               Replace
               <input
@@ -79,7 +75,7 @@ export default function RestoreReplace() {
               />
             </label>
 
-            {/* Select User */}
+            {/* With */}
             <label style={{ display: "flex", flexDirection: "column", fontWeight: "bold" }}>
               With
               <select
@@ -100,95 +96,123 @@ export default function RestoreReplace() {
               </select>
             </label>
 
-            {/* File Upload + Buttons */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                {/* File Upload */}
-                <div style={{ flex: 1 }}>
-                  <label className="file-label" style={{ display: "block", fontWeight: "bold", marginBottom: "5px" }}>
-                    Upload File
-                  </label>
-                  <label
-                    className="file-upload-label"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      padding: "10px",
-                      border: "1px solid #ccc",
-                      borderRadius: "5px",
-                      cursor: "pointer",
-                      backgroundColor: "#f9f9f9",
-                      fontSize: "14px",
-                    }}
-                  >
-                    <input
-                      type="file"
-                      onChange={(e) => setFile(e.target.files[0])}
-                      required
-                      style={{ display: "none" }}
-                    />
-                    <span className="custom-file-btn">{file ? file.name : "Choose File"}</span>
-                  </label>
-                </div>
+            {/* Upload Block */}
+            <label
+              className="file-label"
+              style={{
+                display: "block",
+                fontWeight: "bold",
+                marginBottom: "5px",
+                width: "100% !important",
+              }}
+            >
+              Upload File
+            </label>
 
-                {/* Buttons */}
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button
-                    type="submit"
-                    disabled={!consentChecked}
-                    style={{
-                      padding: "10px 20px",
-                      backgroundColor: consentChecked ? "#280b81d2" : "#a5a7d6ff",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "5px",
-                      cursor: consentChecked ? "pointer" : "not-allowed",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Replace
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => navigate("/restore_user")}
-                    style={{
-                      padding: "10px 20px",
-                      backgroundColor: "#1d096dff",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "5px",
-                      cursor: "pointer",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Restore
-                  </button>
-                </div>
-              </div>
-
-              {/* Consent Checkbox */}
-              <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px" }}>
+            <div
+              style={{
+                width: "100% !important",
+                backgroundColor: "#fff !important",
+                border: "0 !important",
+                margin: "0 !important",
+                padding: "0 !important",
+                display: "flex !important",
+                justifyContent: "center !important",
+                alignItems: "center !important",
+              }}
+            >
+              <label
+                className="file-upload-label"
+                style={{
+                  display: "flex !important",
+                  alignItems: "center !important",
+                  justifyContent: "center !important",
+                  padding: "10px !important",
+                  border: "1px solid #ccc !important",
+                  borderRadius: "5px !important",
+                  cursor: "pointer !important",
+                  backgroundColor: "#f9f9f9 !important",
+                  fontSize: "14px !important",
+                  width: "100% !important",
+                  textAlign: "center !important",
+                  marginLeft: "0 !important",
+                  boxSizing: "border-box !important",
+                }}
+              >
                 <input
-                  type="checkbox"
-                  checked={consentChecked}
-                  onChange={(e) => setConsentChecked(e.target.checked)}
+                  type="file"
+                  onChange={(e) => setFile(e.target.files[0])}
+                  required
+                  style={{ display: "none !important" }}
                 />
-                Accept the{" "}
-                <span
-                  style={{ color: "blue", textDecoration: "underline", cursor: "pointer" }}
-                  onClick={() => setShowModal(true)}
-                >
-                  consent
+                <span className="custom-file-btn">
+                  {file ? file.name : "Choose File"}
                 </span>
               </label>
-
-              {/* Note */}
-              <p style={{ fontStyle: "italic", color: "#555", fontSize: "13px" }}>
-                Note: When a user is replaced, MyComplianceView will be notified via email.
-              </p>
             </div>
+
+            {/* Consent */}
+            <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px" }}>
+              <input
+                type="checkbox"
+                checked={consentChecked}
+                onChange={(e) => setConsentChecked(e.target.checked)}
+              />
+              Accept the{" "}
+              <span
+                style={{ color: "blue", textDecoration: "underline", cursor: "pointer" }}
+                onClick={() => setShowModal(true)}
+              >
+                consent
+              </span>
+            </label>
+
+            {/* Replace Button */}
+            <button
+              type="submit"
+              disabled={!consentChecked}
+              style={{
+                width: "100%",
+                padding: "12px",
+                backgroundColor: consentChecked ? "#280b81" : "#a5a7d6",
+                color: "white",
+                border: "none",
+                borderRadius: "5px",
+                cursor: consentChecked ? "pointer" : "not-allowed",
+                fontWeight: "bold",
+              }}
+            >
+              Replace User
+            </button>
+
+            {/* Restore Link - Updated Hover */}
+            <div style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
+              <span
+                onClick={() => navigate("/restore_user")}
+                style={{
+                  color: "#1d096d",
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  marginTop: "5px",
+                  transition: "all 0.2s ease-in-out",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.color = "#4a32a8";
+                  e.target.style.transform = "translateX(4px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.color = "#1d096d";
+                  e.target.style.transform = "translateX(0)";
+                }}
+              >
+                Restore User →
+              </span>
+            </div>
+
+            <p style={{ fontStyle: "italic", color: "#555", fontSize: "13px" }}>
+              Note: When a user is replaced, MyComplianceView will be notified via email.
+            </p>
           </form>
 
           {/* Consent Modal */}
@@ -218,9 +242,9 @@ export default function RestoreReplace() {
                 }}
               >
                 <p style={{ marginBottom: "20px", fontSize: "14px", color: "#333" }}>
-                  I am solely responsible for any loss of data. I am replacing this
-                  user myself and it is my duty to check if all the data is present.
+                  I am solely responsible for any loss of data and must ensure the replacement is correct.
                 </p>
+
                 <button
                   onClick={() => setShowModal(false)}
                   style={{
@@ -238,6 +262,7 @@ export default function RestoreReplace() {
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>

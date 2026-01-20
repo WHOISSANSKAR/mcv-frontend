@@ -9,44 +9,108 @@ export default function General() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  const initialData = Array.from({ length: 35 }, (_, i) => ({
-    id: i + 1,
-    email: `user${i + 1}@mail.com`,
-    department: `Dept ${((i % 5) + 1)}`,
-    act: `Act ${i + 10}`,
-    name: `User ${i + 1}`,
-    description: `This is a sample description ${i + 1}`,
-    startDate: `2025-01-${(i % 28) + 1}`,
-    actionDate: `2025-02-${(i % 28) + 1}`,
-    endDate: `2025-03-${(i % 28) + 1}`,
-    originalDate: `2025-04-${(i % 28) + 1}`,
-    status: i % 2 === 0 ? "Pending" : "Approved",
-    approver: `Approver ${((i % 4) + 1)}`,
-    requestDate: `2025-05-${(i % 28) + 1}`,
-    responseDate: `2025-06-${(i % 28) + 1}`,
-  }));
-
-  const [data] = useState(initialData);
+  const [data, setData] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const rowsPerPage = 8;
 
+  /* =======================
+     DATA MAPPERS (SAME AS ADMIN)
+  ======================= */
+
+  const mapRegulatoryCompliance = (item) => ({
+    id: item.regcmp_compliance_id,
+    email: item.regcmp_approver_email,
+    department: item.regcmp_user_group_id,
+    act: item.regcmp_compliance_key,
+    name: "Regulatory Compliance",
+    description: item.regcmp_compliance_document,
+    startDate: item.regcmp_requested_date,
+    actionDate: item.regcmp_completed_date,
+    endDate: "",
+    originalDate: "",
+    status: item.regcmp_status,
+    approver: item.regcmp_approver_email,
+    requestDate: item.regcmp_requested_date,
+    responseDate: item.regcmp_completed_date,
+  });
+
+  const mapSelfCompliance = (item) => ({
+    id: item.slfcmp_user_id,
+    email: item.slfcmp_approver_email,
+    department: item.slfcmp_user_group_id,
+    act: item.slfcmp_compliance_key,
+    name: "Self Compliance",
+    description: item.slfcmp_compliance_document,
+    startDate: item.slfcmp_requested_date,
+    actionDate: item.slfcmp_completed_date,
+    endDate: "",
+    originalDate: "",
+    status: item.slfcmp_status,
+    approver: item.slfcmp_approver_email,
+    requestDate: item.slfcmp_requested_date,
+    responseDate: item.slfcmp_completed_date,
+  });
+
+  /* =======================
+     AUTH + FETCH
+  ======================= */
+
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    if (!isLoggedIn) {
+      navigate("/", { replace: true });
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        const [regRes, selfRes] = await Promise.all([
+          fetch("http://localhost:5000/regulcompliance/all"),
+          fetch("http://localhost:5000/report/all"),
+        ]);
+
+        const regData = await regRes.json();
+        const selfData = await selfRes.json();
+
+        const merged = [
+          ...regData.map(mapRegulatoryCompliance),
+          ...selfData.map(mapSelfCompliance),
+        ];
+
+        setData(merged);
+      } catch (err) {
+        console.error("Error fetching general report:", err);
+      }
+    };
+
+    fetchData();
+  }, [navigate]);
+
+  /* =======================
+     SEARCH (UNCHANGED)
+  ======================= */
+
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter(
       (item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.email.toLowerCase().includes(searchTerm.toLowerCase())
+        item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [data, searchTerm]);
+
+  /* =======================
+     SORTING (UNCHANGED)
+  ======================= */
 
   const sortedData = useMemo(() => {
     let sortable = [...filteredData];
     if (sortConfig.key) {
       sortable.sort((a, b) => {
-        const valA = a[sortConfig.key].toString().toLowerCase();
-        const valB = b[sortConfig.key].toString().toLowerCase();
+        const valA = (a[sortConfig.key] || "").toString().toLowerCase();
+        const valB = (b[sortConfig.key] || "").toString().toLowerCase();
         if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
         if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
@@ -57,27 +121,31 @@ export default function General() {
 
   const requestSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
     setSortConfig({ key, direction });
   };
 
   const getSortIcon = (key) => {
     if (sortConfig.key !== key) return <FaSort className="sort-icon" />;
-    return sortConfig.direction === "asc" ? <FaSortUp className="sort-icon" /> : <FaSortDown className="sort-icon" />;
+    return sortConfig.direction === "asc"
+      ? <FaSortUp className="sort-icon" />
+      : <FaSortDown className="sort-icon" />;
   };
+
+  /* =======================
+     PAGINATION (UNCHANGED)
+  ======================= */
 
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
 
- useEffect(() => {
-  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  if (!isLoggedIn) {
-    navigate("/", { replace: true });
-  }
-}, [navigate]);
-
+  /* =======================
+     UI (UNCHANGED)
+  ======================= */
 
   return (
     <div className="general_">
@@ -87,16 +155,12 @@ export default function General() {
       <div className="headSection">
         <div className="compliance-score">General Report</div>
         <div className="rightGroup">
-          <div className="buttonGroup">
-            
-          </div>
+          <div className="buttonGroup"></div>
         </div>
       </div>
 
       <div className="table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "45px" }}>
-       
-        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "45px" }}></div>
 
         <div className="table-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div className="search-box">

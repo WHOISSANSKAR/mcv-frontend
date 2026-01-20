@@ -34,9 +34,12 @@ export default function Sidebar({ menuOpen, setMenuOpen }) {
         <li className="nav-item" onClick={() => (window.location.href = "/General")}>
           <FaFileAlt className="menu-icon" /> Reports
         </li>
-        <li className="nav-item" onClick={() => (window.location.href = "/Restore")}>
-          <FaFolderOpen className="menu-icon" /> Restore and Replace
-        </li>
+      {/*
+<li className="nav-item" onClick={() => (window.location.href = "/Restore")}>
+  <FaFolderOpen className="menu-icon" /> Restore and Replace
+</li>
+*/}
+
         <li className="nav-item" onClick={() => (window.location.href = "/settings")}>
           <FaCog className="menu-icon" /> Settings
         </li>

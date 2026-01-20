@@ -198,7 +198,7 @@ export default function Assessment() {
                 className="action-btn primary"
                 onClick={handleAddRow}
               >
-                Add
+                Upload
               </button>
               <button
                 className="action-btn secondary"

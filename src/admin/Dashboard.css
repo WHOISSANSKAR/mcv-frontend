@@ -94,7 +94,7 @@ body {
   border-radius: 10px;
   padding: 0.6rem 1rem;
   color: #000000;
-  width: 400px; /* increased width */
+  min-width: 400px !important; /* increased width */
   height: 30px;
 }
 
@@ -212,7 +212,7 @@ body {
   display: flex;
   justify-content: space-between;   /* Compliance left, rest right */
   align-items: center;
-  padding: 0 20px 10px 40px;
+  padding: 0 20px 10px 20px;
   width: 100%;
   flex-wrap: wrap;                  /* Allows wrapping on small screens */
 }
@@ -233,8 +233,9 @@ body {
   border: 1px solid #000;           /* Black border */
   padding: 0.6rem 1rem;
   color: #000;                      /* Black text */
-  width: 380px;
+  width: 400px;
   transition: all 0.3s ease;
+  margin-left: 22px;
 }
 
 .searchBox input {
@@ -269,7 +270,7 @@ body {
 .buttonGroup {
   display: flex;
   gap: 1rem;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 /* ESG & Compliance Zone Buttons */
@@ -278,14 +279,14 @@ body {
   align-items: center;           
   justify-content: center;        
   gap: 0.4rem;                   
-  width: 192px;
-  background-color: #fff;       
-  color: #000;                   
+  width: 245px;
+  background-color: #1a1744;       
+  color: #fff;                   
   border: 2px solid #000;        
   border-radius: 10px; 
   font-size: 1rem;               
   cursor: pointer;               
-  padding: 0.6rem 0 0.6rem 1.2rem;  
+  padding: 0.6rem 0 0.6rem 0rem;  
 
 }
 .headBtn:hover {
@@ -926,9 +927,9 @@ body {
   padding: 6px;
   border: 1px solid #ddd;
 }
-.red { background-color: #e53935; }
-.yellow { background-color: #fbc02d; }
-.green { background-color: #43a047; }
+.red { background-color: #2B7AB8; }
+.yellow { background-color: #62A5D0; }
+.green { background-color: #9CC7E0; }
 
 /* === Tasks Section === */
 .tasks-header {
@@ -1766,8 +1767,8 @@ body {
   grid-template-columns: 0.3fr 1fr 1fr;  /* left, center, right */
   align-items: center;
   background: #ffffff;
-  padding: 15px 20px;
-  margin: 15px 20px;
+  padding: 1px 20px;
+  margin: 0px 20px;
   border-radius: 12px;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
   font-weight: bold;
@@ -2328,3 +2329,172 @@ body {
   font-size: 10px;
   text-align: center;
 }
+/* Blue background for task text inside calendar cell */
+.fc-daygrid-day .task-text {
+  background: #007bff;
+  color: white;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: block;
+  font-size: 10px;
+  margin: 2px auto 0 auto;
+  text-align: center;
+}
+
+.charts {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  width: 100%;
+}
+
+/* ROW WRAPPER — very important */
+.chart-row {
+  width: 100%;
+  display: grid !important;
+  gap: 20px;
+}
+
+/* ROW 1 (3 cards) */
+.row-1 {
+  grid-template-columns: repeat(3, 1fr) !important;
+}
+
+/* ROW 2 (3 cards) */
+.row-2 {
+  grid-template-columns: repeat(3, 1fr) !important;
+}
+
+/* ROW 3 (2 cards) */
+.row-3 {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+/* Prevent content from forcing wrap */
+.chart-card {
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.calendar-card,
+.impact-grid {
+  min-width: 0 !important;
+}
+/* Impact Assessment exact styling */
+.impact-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* header row: title left, risk pill right */
+.impact-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.impact-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #0f1720;
+}
+
+/* risk status (top-right) */
+.risk-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #111827;
+}
+.risk-text { font-weight: 600; }
+
+/* pill */
+.risk-pill {
+  width: 44px;
+  height: 12px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  border-radius: 6px;
+  display: inline-block;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+}
+
+/* main two-column body */
+.impact-body {
+  display: grid;
+  grid-template-columns: 1fr 340px; /* left flexible, right fixed like screenshot */
+  gap: 16px;
+  align-items: start;
+}
+
+/* dark subheaders like screenshot */
+.subheader.dark {
+  display: inline-block;
+  background: #20232a;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 3px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  font-size: 10px;
+  margin-left: 50px;
+  white-space: nowrap; /* FORCE single line */
+}
+
+
+/* left part */
+.impact-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+/* mimic x-axis ticks row below the bar chart */
+.bar-x-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #444;
+  margin-top: 6px;
+  padding: 0 6px;
+}
+
+/* right part - rounded box for pie */
+.impact-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pie-wrapper {
+  width: 100%;
+  border-radius: 18px;
+  padding: 8px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ensure chart containers don't overflow */
+.impact-card .recharts-surface {
+  overflow: visible;
+}
+
+/* responsive fallback */
+@media (max-width: 1000px) {
+  .impact-body { grid-template-columns: 1fr 260px; }
+}
+@media (max-width: 720px) {
+  .impact-body { grid-template-columns: 1fr; }
+  .impact-right { margin-top: 10px; }
+}
+

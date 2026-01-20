@@ -9,44 +9,77 @@ export default function General() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  const initialData = Array.from({ length: 35 }, (_, i) => ({
-    id: i + 1,
-    email: `user${i + 1}@mail.com`,
-    department: `Dept ${((i % 5) + 1)}`,
-    act: `Act ${i + 10}`,
-    name: `User ${i + 1}`,
-    description: `This is a sample description ${i + 1}`,
-    startDate: `2025-01-${(i % 28) + 1}`,
-    actionDate: `2025-02-${(i % 28) + 1}`,
-    endDate: `2025-03-${(i % 28) + 1}`,
-    originalDate: `2025-04-${(i % 28) + 1}`,
-    status: i % 2 === 0 ? "Pending" : "Approved",
-    approver: `Approver ${((i % 4) + 1)}`,
-    requestDate: `2025-05-${(i % 28) + 1}`,
-    responseDate: `2025-06-${(i % 28) + 1}`,
-  }));
-
-  const [data] = useState(initialData);
+  const [data, setData] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const rowsPerPage = 8;
 
+  /* =======================
+     AUTH CHECK (UNCHANGED)
+  ======================= */
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    if (!isLoggedIn) {
+      navigate("/", { replace: true });
+    }
+  }, [navigate]);
+
+  /* =======================
+     FETCH + MAP DATA
+     (SAME AS ADMIN COMPLIANCE)
+  ======================= */
+  useEffect(() => {
+    fetch("http://localhost:5000/compliance/list", {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.compliances) {
+          const formatted = res.compliances.map((item) => ({
+            id: item.cmplst_id || "",
+            email: item.cmplst_escalation_mail || "",
+            department: item.cmplst_country || "",
+            act: item.cmplst_act || "",
+            name: item.cmplst_particular || "",
+            description: item.cmplst_description || "",
+            startDate: item.cmplst_start_date || "",
+            actionDate: item.cmplst_action_date || "",
+            endDate: item.cmplst_end_date || "",
+            originalDate: item.cmplst_compliance_key || "",
+            status: item.cmplst_actions_completed ? "Completed" : "Pending",
+            approver: item.cmplst_user_id || "",
+            requestDate: item.cmplst_next_day_date || "",
+            responseDate: item.cmplst_next_escalation_date || "",
+          }));
+
+          setData(formatted);
+        }
+      })
+      .catch((err) => console.error("Error fetching compliance report:", err));
+  }, []);
+
+  /* =======================
+     SEARCH (UNCHANGED LOGIC)
+  ======================= */
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter(
       (item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.email.toLowerCase().includes(searchTerm.toLowerCase())
+        item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [data, searchTerm]);
 
+  /* =======================
+     SORTING (UNCHANGED)
+  ======================= */
   const sortedData = useMemo(() => {
     let sortable = [...filteredData];
     if (sortConfig.key) {
       sortable.sort((a, b) => {
-        const valA = a[sortConfig.key].toString().toLowerCase();
-        const valB = b[sortConfig.key].toString().toLowerCase();
+        const valA = (a[sortConfig.key] || "").toString().toLowerCase();
+        const valB = (b[sortConfig.key] || "").toString().toLowerCase();
         if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
         if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
@@ -57,28 +90,32 @@ export default function General() {
 
   const requestSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
     setSortConfig({ key, direction });
   };
 
   const getSortIcon = (key) => {
     if (sortConfig.key !== key) return <FaSort className="sort-icon" />;
-    return sortConfig.direction === "asc" ? <FaSortUp className="sort-icon" /> : <FaSortDown className="sort-icon" />;
+    return sortConfig.direction === "asc" ? (
+      <FaSortUp className="sort-icon" />
+    ) : (
+      <FaSortDown className="sort-icon" />
+    );
   };
 
+  /* =======================
+     PAGINATION (UNCHANGED)
+  ======================= */
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
 
- useEffect(() => {
-  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  if (!isLoggedIn) {
-    navigate("/", { replace: true });
-  }
-}, [navigate]);
-
-
+  /* =======================
+     UI (100% SAME)
+  ======================= */
   return (
     <div className="report_">
       <UserSidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
@@ -87,16 +124,12 @@ export default function General() {
       <div className="headSection">
         <div className="compliance-score">Compliance Report</div>
         <div className="rightGroup">
-          <div className="buttonGroup">
-            
-          </div>
+          <div className="buttonGroup"></div>
         </div>
       </div>
 
       <div className="table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "45px" }}>
-       
-        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "45px" }}></div>
 
         <div className="table-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div className="search-box">

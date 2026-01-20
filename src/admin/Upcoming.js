@@ -5,52 +5,115 @@ import Header from "./Header";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 
-export default function User() {
+export default function Upcoming() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  // --- Static Data ---
-  const initialData = Array.from({ length: 35 }, (_, i) => ({
-    id: i + 1,
-    email: `user${i + 1}@mail.com`,
-    department: `Dept ${((i % 5) + 1)}`,
-    act: `Act ${i + 10}`,
-    name: `User ${i + 1}`,
-    description: `This is a sample description ${i + 1}`,
-    startDate: `2025-01-${(i % 28) + 1}`,
-    actionDate: `2025-02-${(i % 28) + 1}`,
-    endDate: `2025-03-${(i % 28) + 1}`,
-    originalDate: `2025-04-${(i % 28) + 1}`,
-    status: i % 2 === 0 ? "Pending" : "Approved",
-    approver: `Approver ${((i % 4) + 1)}`,
-    requestDate: `2025-05-${(i % 28) + 1}`,
-    responseDate: `2025-06-${(i % 28) + 1}`,
-  }));
-
-  const [data] = useState(initialData);
+  const [data, setData] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const rowsPerPage = 8;
 
-  // --- Search across all columns ---
+  /* =======================
+     DATA MAPPERS
+  ======================= */
+
+  const mapRegulatoryCompliance = (item) => ({
+    id: item.regcmp_compliance_id,
+    email: item.regcmp_approver_email,
+    department: item.regcmp_user_group_id,
+    act: item.regcmp_compliance_key,
+    name: "Regulatory Compliance",
+    description: item.regcmp_compliance_document,
+    startDate: item.regcmp_requested_date,
+    actionDate: item.regcmp_completed_date,
+    endDate: "",
+    originalDate: "",
+    status: item.regcmp_status,
+    approver: item.regcmp_approver_email,
+    requestDate: item.regcmp_requested_date,
+    responseDate: item.regcmp_completed_date,
+  });
+
+  const mapSelfCompliance = (item) => ({
+    id: item.slfcmp_user_id,
+    email: item.slfcmp_approver_email,
+    department: item.slfcmp_user_group_id,
+    act: item.slfcmp_compliance_key,
+    name: "Self Compliance",
+    description: item.slfcmp_compliance_document,
+    startDate: item.slfcmp_requested_date,
+    actionDate: item.slfcmp_completed_date,
+    endDate: "",
+    originalDate: "",
+    status: item.slfcmp_status,
+    approver: item.slfcmp_approver_email,
+    requestDate: item.slfcmp_requested_date,
+    responseDate: item.slfcmp_completed_date,
+  });
+
+  /* =======================
+     AUTH + DATA FETCH
+  ======================= */
+
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+    if (!isLoggedIn || user.usrlst_role?.toLowerCase() !== "admin") {
+      navigate("/", { replace: true });
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        const [regRes, selfRes] = await Promise.all([
+          fetch("http://localhost:5000/regulcompliance/upcoming"),
+          fetch("http://localhost:5000/report/upcoming"),
+        ]);
+
+        const regData = await regRes.json();
+        const selfData = await selfRes.json();
+
+        const mergedData = [
+          ...regData.map(mapRegulatoryCompliance),
+          ...selfData.map(mapSelfCompliance),
+        ];
+
+        setData(mergedData);
+      } catch (error) {
+        console.error("Error fetching upcoming compliances:", error);
+      }
+    };
+
+    fetchData();
+  }, [navigate]);
+
+  /* =======================
+     SEARCH
+  ======================= */
+
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
-    const lowerTerm = searchTerm.toLowerCase();
     return data.filter((item) =>
-      Object.values(item).some((val) =>
-        val.toString().toLowerCase().includes(lowerTerm)
-      )
+      Object.values(item)
+        .join(" ")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
     );
   }, [data, searchTerm]);
 
-  // --- Sorting ---
+  /* =======================
+     SORTING
+  ======================= */
+
   const sortedData = useMemo(() => {
     let sortable = [...filteredData];
     if (sortConfig.key) {
       sortable.sort((a, b) => {
-        const valA = a[sortConfig.key].toString().toLowerCase();
-        const valB = b[sortConfig.key].toString().toLowerCase();
+        const valA = (a[sortConfig.key] || "").toString().toLowerCase();
+        const valB = (b[sortConfig.key] || "").toString().toLowerCase();
         if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
         if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
@@ -61,7 +124,9 @@ export default function User() {
 
   const requestSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
     setSortConfig({ key, direction });
   };
 
@@ -74,22 +139,19 @@ export default function User() {
     );
   };
 
-  // --- Pagination ---
+  /* =======================
+     PAGINATION
+  ======================= */
+
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
 
-  // --- Auth check ---
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (!isLoggedIn || user.usrlst_role?.toLowerCase() !== "admin") {
-      navigate("/", { replace: true });
-    }
-  }, [navigate]);
+  /* =======================
+     EXPORT CSV
+  ======================= */
 
-  // --- Export to CSV ---
   const exportToCSV = () => {
     if (!sortedData.length) return;
 
@@ -98,23 +160,18 @@ export default function User() {
       "Email",
       "Department",
       "Act",
-      "Name",
+      "Type",
       "Description",
       "Start Date",
       "Action Date",
-      "End Date",
-      "Original Date",
       "Status",
       "Approver",
       "Request Date",
       "Response Date",
     ];
 
-    const csvRows = [];
-    csvRows.push(headers.join(","));
-
-    sortedData.forEach((row) => {
-      const values = [
+    const rows = sortedData.map((row) =>
+      [
         row.id,
         row.email,
         row.department,
@@ -123,19 +180,19 @@ export default function User() {
         row.description,
         row.startDate,
         row.actionDate,
-        row.endDate,
-        row.originalDate,
         row.status,
         row.approver,
         row.requestDate,
         row.responseDate,
-      ].map((v) => `"${v || ""}"`);
-      csvRows.push(values.join(","));
-    });
+      ]
+        .map((v) => `"${v || ""}"`)
+        .join(",")
+    );
 
-    const csvContent = csvRows.join("\n");
+    const csvContent = [headers.join(","), ...rows].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
+
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute("download", "upcoming_report.csv");
@@ -144,6 +201,10 @@ export default function User() {
     document.body.removeChild(link);
   };
 
+  /* =======================
+     UI
+  ======================= */
+
   return (
     <div className="Upcoming">
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
@@ -151,34 +212,17 @@ export default function User() {
 
       <div className="headSection">
         <div className="compliance-score">Upcoming</div>
-        <div className="rightGroup">
-          <div className="buttonGroup"></div>
-        </div>
       </div>
 
-      <div
-        className="table-header"
-        style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "45px" }}>
-          <button className="btn blue-btn" onClick={() => navigate("/General")}>
-            General
-          </button>
-          <button className="btn blue-btn" onClick={() => navigate("/Compliance")}>
-            Compliance
-          </button>
-          <button className="btn blue-btn" onClick={() => navigate("/Approved")}>
-            Approved
-          </button>
-          <button className="btn gray-btn" onClick={() => navigate("/Upcoming")}>
-            Upcoming
-          </button>
+      <div className="table-header" style={{ display: "flex", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: "10px", marginLeft: "45px" }}>
+          <button className="btn blue-btn" onClick={() => navigate("/comprehensive")}>Comprehensive</button>
+          <button className="btn blue-btn" onClick={() => navigate("/Compliance")}>Compliance</button>
+          <button className="btn blue-btn" onClick={() => navigate("/Approved")}>Approved</button>
+          <button className="btn gray-btn" onClick={() => navigate("/Upcoming")}>Upcoming</button>
         </div>
 
-        <div
-          className="table-actions"
-          style={{ display: "flex", alignItems: "center", gap: "10px" }}
-        >
+        <div className="table-actions" style={{ display: "flex", gap: "10px" }}>
           <div className="search-box">
             <input
               placeholder="Search"
@@ -193,7 +237,6 @@ export default function User() {
         </div>
       </div>
 
-      {/* --- TABLE --- */}
       <table className="data-table">
         <thead>
           <tr>
@@ -201,12 +244,10 @@ export default function User() {
             <th onClick={() => requestSort("email")}>Email {getSortIcon("email")}</th>
             <th onClick={() => requestSort("department")}>Department {getSortIcon("department")}</th>
             <th onClick={() => requestSort("act")}>Act {getSortIcon("act")}</th>
-            <th onClick={() => requestSort("name")}>Name {getSortIcon("name")}</th>
+            <th onClick={() => requestSort("name")}>Type {getSortIcon("name")}</th>
             <th>Description</th>
             <th>Start Date</th>
             <th>Action Date</th>
-            <th>End Date</th>
-            <th>Original Date</th>
             <th>Status</th>
             <th>Approver</th>
             <th>Request Date</th>
@@ -215,8 +256,8 @@ export default function User() {
         </thead>
 
         <tbody>
-          {currentRows.map((row, index) => (
-            <tr key={index}>
+          {currentRows.map((row, idx) => (
+            <tr key={idx}>
               <td>{row.id}</td>
               <td>{row.email}</td>
               <td>{row.department}</td>
@@ -225,8 +266,6 @@ export default function User() {
               <td>{row.description}</td>
               <td>{row.startDate}</td>
               <td>{row.actionDate}</td>
-              <td>{row.endDate}</td>
-              <td>{row.originalDate}</td>
               <td>{row.status}</td>
               <td>{row.approver}</td>
               <td>{row.requestDate}</td>
@@ -236,17 +275,10 @@ export default function User() {
         </tbody>
       </table>
 
-      {/* --- Pagination --- */}
       <div className="pagination">
-        <button disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
-          Prev
-        </button>
-        <span>
-          Page {currentPage} of {totalPages}
-        </span>
-        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
-          Next
-        </button>
+        <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Prev</button>
+        <span>Page {currentPage} of {totalPages}</span>
+        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</button>
       </div>
     </div>
   );

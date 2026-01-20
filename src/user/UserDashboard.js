@@ -143,75 +143,70 @@ export default function Dashboard() {
         <div className="welcome-score">Current Compliance : 100%</div>
       </div>
 
-      <section className="charts">
-        <div className="chart-row top">
-          <div className="chart-card">
-            <h3>Compliance Health</h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={pieTrafficData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="40%"
-                  cy="50%"
-                  innerRadius={30}
-                  outerRadius={70}
-                  label={({ percent }) => `(${(percent * 100).toFixed(0)}%)`}
-                >
-                  {pieTrafficData.map((entry, index) => (
-                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend layout="vertical" verticalAlign="middle" align="right" />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+     <section className="charts_">
+  <div className="chart-row_ top">
+    <div className="chart-card_">
+      <h3>Compliance Health</h3>
+      <ResponsiveContainer width="100%" height={200}>
+        <PieChart>
+          <Pie
+            data={pieTrafficData}
+            dataKey="value"
+            nameKey="name"
+            cx="40%"
+            cy="50%"
+            innerRadius={30}
+            outerRadius={70}
+            label={({ percent }) => `(${(percent * 100).toFixed(0)}%)`}
+          >
+            {pieTrafficData.map((entry, index) => (
+              <Cell key={index} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip />
+          <Legend layout="vertical" verticalAlign="middle" align="right" />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
 
-          <div className="chart-card calendar-card">
-            <h3>Compliance Calendar</h3>
-            <div className="calendar-wrapper">
-              <FullCalendar
-                plugins={[dayGridPlugin, interactionPlugin]}
-                initialView="dayGridMonth"
-                height="100%"
-                events={events}
-                dateClick={handleDateClick}
-                headerToolbar={{ left: "title", center: "", right: "prev,next" }}
-                dayCellContent={(arg) => {
-                  const dateStr = parseBackendDate(arg.date);
-                  const dayTasks = tasks.filter((t) => t.cal_date === dateStr);
+    <div className="chart-card_ calendar-card">
+      <h3>Compliance Calendar</h3>
+      <div className="calendar-wrapper">
+        <FullCalendar
+          plugins={[dayGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          height="100%"
+          events={events}
+          dateClick={handleDateClick}
+          headerToolbar={{ left: "title", center: "", right: "prev,next" }}
+          dayCellContent={(arg) => {
+            const dateStr = parseBackendDate(arg.date);
+            const dayTasks = tasks.filter((t) => t.cal_date === dateStr);
 
-                  if (dayTasks.length >= 2) {
-                    return { html: `<div class="fc-daygrid-day-number">${arg.dayNumberText}</div><div class="task-dot"></div>` };
-                  }
+            if (dayTasks.length >= 2) {
+              return { html: `<div class="fc-daygrid-day-number">${arg.dayNumberText}</div><div class="task-dot"></div>` };
+            }
 
-                  if (dayTasks.length === 1) {
-                    const t = dayTasks[0];
-                    return {
-                      html: `<div class="fc-daygrid-day-number" style="text-align:center;">${arg.dayNumberText}</div>
-                             <div style="
-                               max-width: 70px;
-                               margin: 2px auto 0 auto;
-                               font-size: 10px;
-                               white-space: nowrap;
-                               overflow: hidden;
-                               text-overflow: ellipsis;
-                               text-align: center;"
-                               title="${t.cal_event}">
-                               ${truncateTask(t.cal_event)}
-                             </div>`,
-                    };
-                  }
+            if (dayTasks.length === 1) {
+              const t = dayTasks[0];
+              return {
+                html: `
+                  <div class="fc-daygrid-day-number" style="text-align:center;">${arg.dayNumberText}</div>
+                  <div class="task-text" title="${t.cal_event}">
+                    ${truncateTask(t.cal_event)}
+                  </div>
+                `,
+              };
+            }
 
-                  return { html: `<div class="fc-daygrid-day-number">${arg.dayNumberText}</div>` };
-                }}
-                dayCellClassNames={() => "fc-pointer"}
-              />
-            </div>
-          </div>
-        </div>
+            return { html: `<div class="fc-daygrid-day-number">${arg.dayNumberText}</div>` };
+          }}
+          dayCellClassNames={() => "fc-pointer"}
+        />
+      </div>
+    </div>
+  </div>
+
 
         <section className="stats">
           <div className="stat-box">

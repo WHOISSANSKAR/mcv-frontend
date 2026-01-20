@@ -203,11 +203,7 @@ export default function EditBu() {
             </button>
           </div>
 
-          <div className="backup-container">
-            <button type="button" className="backup-btn" onClick={handleBackup}>
-              Take Backup
-            </button>
-          </div>
+         
         </form>
       </div>
     </div>

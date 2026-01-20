@@ -14,6 +14,8 @@ import {
   PieChart,
   Pie,
   Cell,
+  BarChart,
+  Bar,
 } from "recharts";
 import { FaSearch, FaEdit, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
@@ -62,19 +64,43 @@ export default function Dashboard() {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [recentCompliances, setRecentCompliances] = useState([]);
   const navigate = useNavigate();
+
+  // Impact Assessment sample data
+  // Unified Impact Assessment Colors + Values
+const IMPACT_DATA = [
+  { name: "Completed", value: 100, color: "#7c3aed" },
+  { name: "In Progress", value: 40, color: "#f50bed" },
+  { name: "Not Started", value: 60, color: "#d02cec" }
+];
+
+const impactBarData = IMPACT_DATA.map((d) => ({
+  name: d.name,
+  value: d.value,
+  color: d.color
+}));
+const impactPieData = IMPACT_DATA.map((d) => ({
+  name: d.name,
+  value: d.value,
+  fill: d.color
+}));
+  const values = impactBarData.map(d => d.value);
+const min = Math.min(...values);
+const max = Math.max(...values);
+
+// Add padding BELOW the smallest value
+const paddedMin = min - 10 < 0 ? 0 : min - 10;  // (so if min = 40 → 30)
+
+// Calculate ticks with padding
+const step = Math.ceil((max - paddedMin) / 2) || 1;
+const customTicks = [paddedMin, paddedMin + step, max];
+
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     if (savedUser) setUser(JSON.parse(savedUser));
   }, []);
-
-  const formatDate = (dateObj) => {
-    const y = dateObj.getFullYear();
-    const m = String(dateObj.getMonth() + 1).padStart(2, "0");
-    const d = String(dateObj.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  };
 
   const parseBackendDate = (dateStr) => {
     if (!dateStr) return null;
@@ -120,8 +146,25 @@ export default function Dashboard() {
     }
   };
 
+  const fetchRecentCompliances = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/compliance/list", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      const data = await res.json();
+      if (res.ok && data.compliances) {
+        setRecentCompliances(data.compliances.slice(0, 5));
+      }
+    } catch (err) {
+      console.error("Error loading compliances:", err);
+    }
+  };
+
   useEffect(() => {
     fetchEvents();
+    fetchRecentCompliances();
   }, []);
 
   const addTask = async (e) => {
@@ -144,16 +187,17 @@ export default function Dashboard() {
         alert(body.error || "Error adding event");
       }
     } catch (err) {
-      console.error("Network error:", err);
       alert("Network error");
     }
   };
 
   const handleDateClick = (info) => {
     const date = info.date;
-    const formattedDate = `${date.getFullYear()}-${String(
-      date.getMonth() + 1
-    ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(date.getDate()).padStart(2, "0")}`;
+
     setSelectedDate(formattedDate);
     setShowModal(true);
   };
@@ -167,25 +211,25 @@ export default function Dashboard() {
 
       {/* HEADER SECTION */}
       <div className="headSection">
-        <div></div>
         <div className="rightGroup">
-          <div className="searchBox">
-            <input
-              type="text"
-              placeholder="Can't find something? Search it here!"
-            />
-            <FaSearch className="searchIcon" />
-          </div>
           <div className="buttonGroup">
-            <button
-              className="headBtn"
-              onClick={() => (window.location.href = "/user_dashboard")}
-            >
+            <button className="headBtn" onClick={() => (window.location.href = "/user_dashboard")}>
               + Compliance Zone
             </button>
             <button className="headBtn" onClick={() => navigate("/ESG")}>
               + ESG
             </button>
+            <button className="headBtn" onClick={() => (window.location.href = "/dpdp_dashboard")}>
+              + DPDP Act
+            </button>
+            <button className="headBtn" onClick={() => navigate("/ESG")}>
+              + Bharat vault
+            </button>
+          </div>
+
+          <div className="searchBox">
+            <input type="text" placeholder="Can't find something? Search it here!" />
+            <FaSearch className="searchIcon" />
           </div>
         </div>
       </div>
@@ -200,9 +244,10 @@ export default function Dashboard() {
         <div className="welcome-score">Current Compliance : 100%</div>
       </div>
 
+      {/* ====== CHARTS SECTION (3 rows as requested) ====== */}
       <section className="charts">
-        <div className="chart-row top">
-          {/* RECENT COMPLIANCE */}
+        {/* ROW 1: Recent Compliance | Compliance Track | Calendar */}
+        <div className="chart-row row-1">
           <div className="chart-card">
             <h3>Recent Compliance</h3>
             <table className="compliance-table">
@@ -215,18 +260,22 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>REGSTFACTORIES02</td>
-                  <td>REFER TO STATE RULES - II</td>
-                  <td>Sep 10 2025</td>
-                  <td>Sep 11 2025</td>
-                </tr>
-                <tr>
-                  <td>REGSTFACTORIES01</td>
-                  <td>REFER TO STATE RULES - I</td>
-                  <td>Sep 3 2025</td>
-                  <td>Sep 10 2025</td>
-                </tr>
+                {recentCompliances.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: "center" }}>
+                      No Records Found
+                    </td>
+                  </tr>
+                ) : (
+                  recentCompliances.map((c, i) => (
+                    <tr key={i}>
+                      <td>{c.cmplst_id}</td>
+                      <td>{c.cmplst_particular}</td>
+                      <td>{c.cmplst_start_date}</td>
+                      <td>{c.cmplst_end_date}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
             <div className="view-more" onClick={() => navigate("/Compliance")}>
@@ -234,7 +283,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* COMPLIANCE TRACK */}
           <div className="chart-card">
             <h3>Compliance Track</h3>
             <ResponsiveContainer width="100%" height={240}>
@@ -245,23 +293,12 @@ export default function Dashboard() {
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip />
                 <Legend />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="Overdue"
-                  stroke="#cc0e0e"
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="Approved"
-                  stroke="#38269f"
-                />
+                <Line yAxisId="left" type="monotone" dataKey="Overdue" stroke="#cc0e0e" />
+                <Line yAxisId="right" type="monotone" dataKey="Approved" stroke="#38269f" />
               </LineChart>
             </ResponsiveContainer>
           </div>
 
-          {/* CALENDAR */}
           <div className="chart-card calendar-card">
             <h3>Compliance Calendar</h3>
             <div className="calendar-wrapper">
@@ -275,54 +312,49 @@ export default function Dashboard() {
                 headerToolbar={{ left: "title", center: "", right: "prev,next" }}
                 height="100%"
                 eventContent={() => null}
-               dayCellContent={(arg) => {
-  const date = arg.date;
-  const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-  const dayTasks = tasks.filter((t) => t.cal_date === dateStr);
+                dayCellContent={(arg) => {
+                  const date = arg.date;
+                  const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+                    2,
+                    "0"
+                  )}-${String(date.getDate()).padStart(2, "0")}`;
+                  const dayTasks = tasks.filter((t) => t.cal_date === dateStr);
 
-  if (dayTasks.length >= 2) {
-    return {
-      html: `
-        <div class="fc-daygrid-day-number">${arg.dayNumberText}</div>
-        <div class="task-dot"></div>
-      `,
-    };
-  }
+                  if (dayTasks.length >= 2) {
+                    return {
+                      html: `
+                        <div class="fc-daygrid-day-number">${arg.dayNumberText}</div>
+                        <div class="task-dot"></div>
+                      `,
+                    };
+                  }
 
-  if (dayTasks.length === 1) {
-    const t = dayTasks[0];
-    const displayText = t.cal_event.length > 15 ? t.cal_event.slice(0, 15) + "..." : t.cal_event;
+                  if (dayTasks.length === 1) {
+                    const t = dayTasks[0];
+                    const displayText =
+                      t.cal_event.length > 15 ? t.cal_event.slice(0, 15) + "..." : t.cal_event;
 
-    return {
-      html: `
-        <div class="fc-daygrid-day-number" style="text-align:center;">${arg.dayNumberText}</div>
-        <div style="
-          max-width: 70px; /* width for calendar cell */
-          margin: 2px auto 0 auto;
-          font-size: 10px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          text-align: center;
-        " title="${t.cal_event}">
-          ${displayText}
-        </div>
-      `,
-    };
-  }
+                    return {
+                      html: `
+                        <div class="fc-daygrid-day-number" style="text-align:center;">${arg.dayNumberText}</div>
+                        <div class="task-text" title="${t.cal_event}">
+                          ${displayText}
+                        </div>
+                      `,
+                    };
+                  }
 
-  return {
-    html: `<div class="fc-daygrid-day-number">${arg.dayNumberText}</div>`,
-  };
-}}
-
+                  return {
+                    html: `<div class="fc-daygrid-day-number">${arg.dayNumberText}</div>`,
+                  };
+                }}
               />
             </div>
           </div>
         </div>
 
-        {/* BOTTOM CHARTS */}
-        <div className="chart-row bottom">
+        {/* ROW 2: Compliance Health | Alerts & Notifications | Impact Assessment */}
+        <div className="chart-row row-2">
           <div className="chart-card">
             <h3>Compliance Health</h3>
             <ResponsiveContainer width="100%" height={200}>
@@ -351,11 +383,108 @@ export default function Dashboard() {
             <h3>Alerts & Notifications</h3>
             <ul className="alerts-list">
               <li className="alert-item overdue">❗ 2 audits overdue (Finance, IT)</li>
-              <li className="alert-item expiring">⚠️ Vendor X compliance certificate expiring in 30 days</li>
+              <li className="alert-item expiring">
+                ⚠️ Vendor X compliance certificate expiring in 30 days
+              </li>
               <li className="alert-item success">✅ New GDPR regulation update applied successfully</li>
             </ul>
           </div>
 
+         {/* IMPACT ASSESSMENT (replace existing Impact Assessment card) */}
+<div className="chart-card impact-card">
+  <div className="impact-card-header">
+    <div className="impact-title">Impact Assessment</div>
+
+    <div className="risk-status">
+      <span className="risk-text">Risk Status :</span>
+      <span className="risk-pill" />
+    </div>
+  </div>
+
+  <div className="impact-body">
+
+    {/* LEFT BAR GRAPH */}
+    <div className="impact-left">
+  <div className="subheader dark">Overall Count</div>
+
+  <ResponsiveContainer width="150%" height={180}>
+  <BarChart
+    data={impactBarData}
+    layout="vertical"
+    margin={{ top: 10, right: 20, left: 20, bottom: 0 }}   // shifted right so ticks fit
+  >
+    <XAxis
+      type="number"
+      domain={[paddedMin, max]}
+      ticks={customTicks}
+      interval={0}
+      stroke="#333"        // X-axis visible
+      tick={{ fill: "#000" }}
+      axisLine={true}      // show axis line
+    />
+
+    <YAxis
+      type="category"
+      dataKey="name"
+      tick={{ fontSize: 11, fill: "#000" }}
+      width={80}           // wider so labels don't clash
+      axisLine={true}      // show axis line
+      tickLine={true}      // make tick marks visible
+      stroke="#333"
+    />
+
+    <Tooltip />
+
+    <Bar
+      dataKey="value"
+      barSize={18}
+      radius={[5, 5, 5, 5]}
+      label={{ position: "right", fill: "#000", fontSize: 11 }}
+    >
+      {impactBarData.map((entry, index) => (
+        <Cell key={index} fill={entry.color} />
+      ))}
+    </Bar>
+  </BarChart>
+</ResponsiveContainer>
+
+
+</div>
+
+
+    {/* RIGHT PIE CHART */}
+    <div className="impact-right">
+      <div className="subheader dark">Percentage (%)</div>
+
+      <div className="pie-wrapper">
+  <ResponsiveContainer width="100%" height={180}>
+    <PieChart>
+      <Pie
+  data={impactPieData}
+  dataKey="value"
+  nameKey="name"
+  outerRadius={70}
+  label={({ percent }) => `${Math.round(percent * 100)}%`}
+>
+  {impactPieData.map((entry, i) => (
+    <Cell key={i} fill={entry.fill} />
+  ))}
+</Pie>
+
+      <Tooltip />
+    </PieChart>
+  </ResponsiveContainer>
+</div>
+
+    </div>
+
+  </div>
+</div>
+
+        </div>
+
+        {/* ROW 3: Risk Heatmap | Tasks & Workflow */}
+        <div className="chart-row row-3">
           <div className="chart-card">
             <h3>Risk Heatmap</h3>
             <table className="heatmap-table">
@@ -396,7 +525,6 @@ export default function Dashboard() {
             </table>
           </div>
 
-          {/* TASKS TABLE */}
           <div className="chart-card">
             <div className="tasks-header">
               <h3>Tasks & Workflow</h3>
@@ -512,18 +640,10 @@ function TaskItem({ task, refresh, selectedDate }) {
   };
 
   return (
-    <li
-      className="task-item"
-      style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}
-    >
+    <li className="task-item" style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
       {isEditing ? (
         <>
-          <input
-            type="text"
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            style={{ flex: 1 }}
-          />
+          <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} style={{ flex: 1 }} />
           <button onClick={handleUpdate} title="Save Task">
             Save
           </button>

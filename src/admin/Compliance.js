@@ -7,7 +7,7 @@ import "./Dashboard.css";
 
 export default function Compliance() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [data, setData] = useState([]); // ✅ backend data
+  const [data, setData] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -22,34 +22,34 @@ export default function Compliance() {
 
     if (!isLoggedIn || user.usrlst_role?.toLowerCase() !== "admin") {
       navigate("/", { replace: true });
-      return;
     }
   }, [navigate]);
 
-  // ✅ Fetch compliance list
+  // ✅ Fetch ALL compliance data from /list
   useEffect(() => {
     fetch("http://localhost:5000/compliance/list", {
-      credentials: "include", // ✅ send session cookie
+      credentials: "include",
     })
       .then((res) => res.json())
       .then((data) => {
         if (data.compliances) {
           const formatted = data.compliances.map((item) => ({
             id: item.cmplst_id || "",
-            email: "",
-            department: "",
+            email: item.cmplst_escalation_mail || "",
+            department: item.cmplst_country || "",
             act: item.cmplst_act || "",
             name: item.cmplst_particular || "",
             description: item.cmplst_description || "",
             startDate: item.cmplst_start_date || "",
             actionDate: item.cmplst_action_date || "",
             endDate: item.cmplst_end_date || "",
-            originalDate: "",
-            status: "",
-            approver: "",
-            requestDate: "",
-            responseDate: "",
+            originalDate: item.cmplst_compliance_key || "",
+            status: item.cmplst_actions_completed ? "Completed" : "Pending",
+            approver: item.cmplst_user_id || "",
+            requestDate: item.cmplst_next_day_date || "",
+            responseDate: item.cmplst_next_escalation_date || "",
           }));
+
           setData(formatted);
         }
       })
@@ -67,7 +67,7 @@ export default function Compliance() {
     );
   }, [data, searchTerm]);
 
-  // ✅ Sorting logic
+  // ✅ Sorting
   const sortedData = useMemo(() => {
     let sortable = [...filteredData];
     if (sortConfig.key) {
@@ -84,7 +84,9 @@ export default function Compliance() {
 
   const requestSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
     setSortConfig({ key, direction });
   };
 
@@ -103,9 +105,9 @@ export default function Compliance() {
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
 
-  // ✅ Export all (filtered + sorted) data to CSV
+  // ✅ Export CSV (unchanged)
   const exportToCSV = () => {
-    if (!sortedData || sortedData.length === 0) return;
+    if (!sortedData.length) return;
 
     const headers = [
       "Id",
@@ -124,8 +126,7 @@ export default function Compliance() {
       "Response Date",
     ];
 
-    const csvRows = [];
-    csvRows.push(headers.join(","));
+    const csvRows = [headers.join(",")];
 
     sortedData.forEach((row) => {
       const values = [
@@ -144,11 +145,13 @@ export default function Compliance() {
         row.requestDate,
         row.responseDate,
       ].map((val) => `"${val || ""}"`);
+
       csvRows.push(values.join(","));
     });
 
-    const csvContent = csvRows.join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([csvRows.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -187,12 +190,10 @@ export default function Compliance() {
             marginLeft: "45px",
           }}
         >
-          <button className="btn blue-btn" onClick={() => navigate("/General")}>
-            General
+          <button className="btn blue-btn" onClick={() => navigate("/comprehensive")}>
+            Comprehensive
           </button>
-          <button className="btn gray-btn" onClick={() => navigate("/Compliance")}>
-            Compliance
-          </button>
+          <button className="btn gray-btn">Compliance</button>
           <button className="btn blue-btn" onClick={() => navigate("/Approved")}>
             Approved
           </button>
@@ -201,10 +202,7 @@ export default function Compliance() {
           </button>
         </div>
 
-        <div
-          className="table-actions"
-          style={{ display: "flex", alignItems: "center", gap: "10px" }}
-        >
+        <div className="table-actions" style={{ display: "flex", gap: "10px" }}>
           <div className="search-box">
             <input
               placeholder="Search"
@@ -223,17 +221,11 @@ export default function Compliance() {
       <table className="data-table">
         <thead>
           <tr>
-            <th onClick={() => requestSort("id")}>
-              Id {getSortIcon("id")}
-            </th>
+            <th onClick={() => requestSort("id")}>Id {getSortIcon("id")}</th>
             <th>Email</th>
             <th>Department</th>
-            <th onClick={() => requestSort("act")}>
-              Act {getSortIcon("act")}
-            </th>
-            <th onClick={() => requestSort("name")}>
-              Name {getSortIcon("name")}
-            </th>
+            <th onClick={() => requestSort("act")}>Act {getSortIcon("act")}</th>
+            <th onClick={() => requestSort("name")}>Name {getSortIcon("name")}</th>
             <th>Description</th>
             <th>Start Date</th>
             <th>Action Date</th>
@@ -245,7 +237,6 @@ export default function Compliance() {
             <th>Response Date</th>
           </tr>
         </thead>
-
         <tbody>
           {currentRows.map((row, index) => (
             <tr key={index}>
@@ -276,11 +267,9 @@ export default function Compliance() {
         >
           Prev
         </button>
-
         <span>
           Page {currentPage} of {totalPages}
         </span>
-
         <button
           disabled={currentPage === totalPages}
           onClick={() => setCurrentPage((p) => p + 1)}

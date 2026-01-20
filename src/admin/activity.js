@@ -58,34 +58,37 @@ export default function Activity() {
   }, [navigate]);
 
   // ✅ Fetch data
-  useEffect(() => {
-    async function fetchLogs() {
-      try {
-        const res = await fetch("http://localhost:5000/activity_log/", {
-          credentials: "include",
-        });
+ useEffect(() => {
+  async function fetchLogs() {
+    try {
+      const res = await fetch("http://localhost:5000/activity_log", {
+  credentials: "include",
+});
 
-        const json = await res.json();
+  
 
-        if (res.ok && json.activities) {
-          const formatted = json.activities.map((item) => ({
-            department: item.acty_department || "",
-            email: item.acty_email || "",
-            date: cleanDate(item.acty_date),
-            time: item.acty_time || "",
-            action: item.acty_action || "",
-          }));
-          setData(formatted);
-        } else {
-          console.error("API Error:", json);
-        }
-      } catch (err) {
-        console.error("Fetch error:", err);
+      const json = await res.json();
+
+      if (res.ok && json.activities) {
+        const formatted = json.activities.map((item) => ({
+          department: item.acty_department || "",
+          email: item.acty_email || "",
+          date: item.acty_date ? item.acty_date.split("T")[0] : "", // keeps YYYY-MM-DD
+          time: item.acty_time || "",
+          action: item.acty_action || "",
+        }));
+        setData(formatted);
+      } else {
+        console.error("API Error:", json);
       }
+    } catch (err) {
+      console.error("Fetch error:", err);
     }
+  }
 
-    fetchLogs();
-  }, []);
+  fetchLogs();
+}, []);
+
 
   // ✅ Filtering + sorting
   const filteredData = useMemo(() => {

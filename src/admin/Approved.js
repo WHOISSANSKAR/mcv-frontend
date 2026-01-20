@@ -9,46 +9,111 @@ export default function Approved() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Sample data
-  const initialData = Array.from({ length: 35 }, (_, i) => ({
-    id: i + 1,
-    email: `user${i + 1}@mail.com`,
-    department: `Dept ${((i % 5) + 1)}`,
-    act: `Act ${i + 10}`,
-    name: `User ${i + 1}`,
-    description: `This is a sample description ${i + 1}`,
-    startDate: `2025-01-${(i % 28) + 1}`,
-    actionDate: `2025-02-${(i % 28) + 1}`,
-    endDate: `2025-03-${(i % 28) + 1}`,
-    originalDate: `2025-04-${(i % 28) + 1}`,
-    status: i % 2 === 0 ? "Pending" : "Approved",
-    approver: `Approver ${((i % 4) + 1)}`,
-    requestDate: `2025-05-${(i % 28) + 1}`,
-    responseDate: `2025-06-${(i % 28) + 1}`,
-  }));
-
-  const [data] = useState(initialData);
+  const [data, setData] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const rowsPerPage = 8;
 
-  // Search across all columns
+  /* =======================
+     DATA MAPPERS
+  ======================= */
+
+  const mapRegulatoryCompliance = (item) => ({
+    id: item.regcmp_compliance_id,
+    email: item.regcmp_approver_email,
+    department: item.regcmp_user_group_id,
+    act: item.regcmp_compliance_key,
+    name: "Regulatory Compliance",
+    description: item.regcmp_compliance_document,
+    startDate: item.regcmp_requested_date,
+    actionDate: item.regcmp_completed_date,
+    endDate: "",
+    originalDate: "",
+    status: item.regcmp_status,
+    approver: item.regcmp_approver_email,
+    requestDate: item.regcmp_requested_date,
+    responseDate: item.regcmp_completed_date,
+  });
+
+  const mapSelfCompliance = (item) => ({
+    id: item.slfcmp_user_id,
+    email: item.slfcmp_approver_email,
+    department: item.slfcmp_user_group_id,
+    act: item.slfcmp_compliance_key,
+    name: "Self Compliance",
+    description: item.slfcmp_compliance_document,
+    startDate: item.slfcmp_requested_date,
+    actionDate: item.slfcmp_completed_date,
+    endDate: "",
+    originalDate: "",
+    status: item.slfcmp_status,
+    approver: item.slfcmp_approver_email,
+    requestDate: item.slfcmp_requested_date,
+    responseDate: item.slfcmp_completed_date,
+  });
+
+  /* =======================
+     AUTH + FETCH APPROVED
+  ======================= */
+
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+    if (!isLoggedIn || user.usrlst_role?.toLowerCase() !== "admin") {
+      navigate("/", { replace: true });
+      return;
+    }
+
+    const fetchApproved = async () => {
+      try {
+        const [regRes, selfRes] = await Promise.all([
+          fetch("http://localhost:5000/regulcompliance/approved"),
+          fetch("http://localhost:5000/report/approved"),
+        ]);
+
+        const regData = await regRes.json();
+        const selfData = await selfRes.json();
+
+        const merged = [
+          ...regData.map(mapRegulatoryCompliance),
+          ...selfData.map(mapSelfCompliance),
+        ];
+
+        setData(merged);
+      } catch (err) {
+        console.error("Error fetching approved compliances:", err);
+      }
+    };
+
+    fetchApproved();
+  }, [navigate]);
+
+  /* =======================
+     SEARCH
+  ======================= */
+
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
-    const term = searchTerm.toLowerCase();
     return data.filter((item) =>
-      Object.values(item).some((val) => val.toString().toLowerCase().includes(term))
+      Object.values(item)
+        .join(" ")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
     );
   }, [data, searchTerm]);
 
-  // Sorting logic
+  /* =======================
+     SORTING
+  ======================= */
+
   const sortedData = useMemo(() => {
     let sortable = [...filteredData];
     if (sortConfig.key) {
       sortable.sort((a, b) => {
-        const valA = a[sortConfig.key].toString().toLowerCase();
-        const valB = b[sortConfig.key].toString().toLowerCase();
+        const valA = (a[sortConfig.key] || "").toString().toLowerCase();
+        const valB = (b[sortConfig.key] || "").toString().toLowerCase();
         if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
         if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
@@ -59,36 +124,72 @@ export default function Approved() {
 
   const requestSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
     setSortConfig({ key, direction });
   };
 
   const getSortIcon = (key) => {
     if (sortConfig.key !== key) return <FaSort className="sort-icon" />;
-    return sortConfig.direction === "asc" ? <FaSortUp className="sort-icon" /> : <FaSortDown className="sort-icon" />;
+    return sortConfig.direction === "asc" ? (
+      <FaSortUp className="sort-icon" />
+    ) : (
+      <FaSortDown className="sort-icon" />
+    );
   };
 
-  // Export to CSV
+  /* =======================
+     PAGINATION
+  ======================= */
+
+  const indexOfLastRow = currentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.ceil(sortedData.length / rowsPerPage);
+
+  /* =======================
+     EXPORT CSV
+  ======================= */
+
   const exportToCSV = () => {
-    if (!sortedData || sortedData.length === 0) return;
+    if (!sortedData.length) return;
 
     const headers = [
-      "Id", "Email", "Department", "Act", "Name", "Description", "Start Date",
-      "Action Date", "End Date", "Original Date", "Status", "Approver", "Request Date", "Response Date"
+      "Id",
+      "Email",
+      "Department",
+      "Act",
+      "Type",
+      "Description",
+      "Start Date",
+      "Action Date",
+      "Status",
+      "Approver",
+      "Request Date",
+      "Response Date",
     ];
 
-    const csvRows = [headers.join(",")];
+    const rows = sortedData.map((row) =>
+      [
+        row.id,
+        row.email,
+        row.department,
+        row.act,
+        row.name,
+        row.description,
+        row.startDate,
+        row.actionDate,
+        row.status,
+        row.approver,
+        row.requestDate,
+        row.responseDate,
+      ]
+        .map((v) => `"${v || ""}"`)
+        .join(",")
+    );
 
-    sortedData.forEach((row) => {
-      const values = [
-        row.id, row.email, row.department, row.act, row.name, row.description,
-        row.startDate, row.actionDate, row.endDate, row.originalDate, row.status,
-        row.approver, row.requestDate, row.responseDate
-      ].map((val) => `"${val || ""}"`);
-      csvRows.push(values.join(","));
-    });
-
-    const csvContent = csvRows.join("\n");
+    const csvContent = [headers.join(","), ...rows].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
 
@@ -100,20 +201,9 @@ export default function Approved() {
     document.body.removeChild(link);
   };
 
-  // Pagination
-  const indexOfLastRow = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
-  const totalPages = Math.ceil(sortedData.length / rowsPerPage);
-
-  // Auth check
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (!isLoggedIn || user.usrlst_role?.toLowerCase() !== "admin") {
-      navigate("/", { replace: true });
-    }
-  }, [navigate]);
+  /* =======================
+     UI
+  ======================= */
 
   return (
     <div className="Approved">
@@ -122,20 +212,17 @@ export default function Approved() {
 
       <div className="headSection">
         <div className="compliance-score">Approved</div>
-        <div className="rightGroup">
-          <div className="buttonGroup"></div>
-        </div>
       </div>
 
-      <div className="table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "45px" }}>
-          <button className="btn blue-btn" onClick={() => navigate("/General")}>General</button>
+      <div className="table-header" style={{ display: "flex", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: "10px", marginLeft: "45px" }}>
+          <button className="btn blue-btn" onClick={() => navigate("/comprehensive")}>Comprehensive</button>
           <button className="btn blue-btn" onClick={() => navigate("/Compliance")}>Compliance</button>
           <button className="btn gray-btn" onClick={() => navigate("/Approved")}>Approved</button>
           <button className="btn blue-btn" onClick={() => navigate("/Upcoming")}>Upcoming</button>
         </div>
 
-        <div className="table-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div className="table-actions" style={{ display: "flex", gap: "10px" }}>
           <div className="search-box">
             <input
               placeholder="Search"
@@ -144,7 +231,9 @@ export default function Approved() {
             />
             <FaSearch className="search-icon" />
           </div>
-          <button className="action-btn primary" onClick={exportToCSV}>Export</button>
+          <button className="action-btn primary" onClick={exportToCSV}>
+            Export
+          </button>
         </div>
       </div>
 
@@ -155,52 +244,46 @@ export default function Approved() {
             <th onClick={() => requestSort("email")}>Email {getSortIcon("email")}</th>
             <th onClick={() => requestSort("department")}>Department {getSortIcon("department")}</th>
             <th onClick={() => requestSort("act")}>Act {getSortIcon("act")}</th>
-            <th onClick={() => requestSort("name")}>Name {getSortIcon("name")}</th>
+            <th onClick={() => requestSort("name")}>Type {getSortIcon("name")}</th>
             <th>Description</th>
             <th>Start Date</th>
             <th>Action Date</th>
-            <th>End Date</th>
-            <th>Original Date</th>
             <th>Status</th>
             <th>Approver</th>
             <th>Request Date</th>
             <th>Response Date</th>
-            <th>Action</th> {/* NEW COLUMN */}
+            <th>Action</th>
           </tr>
         </thead>
 
         <tbody>
           {currentRows.map((row, index) => (
             <tr key={index}>
-              <td><div className="label">Id</div><div className="value">{row.id}</div></td>
-              <td><div className="label">Email</div><div className="value">{row.email}</div></td>
-              <td><div className="label">Department</div><div className="value">{row.department}</div></td>
-              <td><div className="label">Act</div><div className="value">{row.act}</div></td>
-              <td><div className="label">Name</div><div className="value">{row.name}</div></td>
-              <td><div className="label">Description</div><div className="value">{row.description}</div></td>
-              <td><div className="label">Start Date</div><div className="value">{row.startDate}</div></td>
-              <td><div className="label">Action Date</div><div className="value">{row.actionDate}</div></td>
-              <td><div className="label">End Date</div><div className="value">{row.endDate}</div></td>
-              <td><div className="label">Original Date</div><div className="value">{row.originalDate}</div></td>
-              <td><div className="label">Status</div><div className="value">{row.status}</div></td>
-              <td><div className="label">Approver</div><div className="value">{row.approver}</div></td>
-              <td><div className="label">Request Date</div><div className="value">{row.requestDate}</div></td>
-              <td><div className="label">Response Date</div><div className="value">{row.responseDate}</div></td>
-
-              {/* NEW ACTION BUTTON */}
+              <td>{row.id}</td>
+              <td>{row.email}</td>
+              <td>{row.department}</td>
+              <td>{row.act}</td>
+              <td>{row.name}</td>
+              <td>{row.description}</td>
+              <td>{row.startDate}</td>
+              <td>{row.actionDate}</td>
+              <td>{row.status}</td>
+              <td>{row.approver}</td>
+              <td>{row.requestDate}</td>
+              <td>{row.responseDate}</td>
               <td>
-                <span className="label">Action</span>
-                <span className="value">
-                  <button
-                    className="edit-btn"
-                    onClick={() => {
-                      localStorage.setItem("approveReportData", JSON.stringify(row));
-                      navigate("/approve_report");
-                    }}
-                  >
-                    View
-                  </button>
-                </span>
+                <button
+                  className="edit-btn"
+                  onClick={() => {
+                    localStorage.setItem(
+                      "approveReportData",
+                      JSON.stringify(row)
+                    );
+                    navigate("/approve_report");
+                  }}
+                >
+                  View
+                </button>
               </td>
             </tr>
           ))}

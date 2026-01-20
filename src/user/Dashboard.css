@@ -57,17 +57,7 @@ body {
   width: 100%;
 }
 
-/* Search Box */
-.searchBox {
-  display: flex;
-  align-items: center;
-  background-color: #d1d2d5;
-  border-radius: 10px;
-  padding: 0.6rem 1rem;
-  color: #000000;
-  width: 300px;
-  height: 30px;
-}
+
 
 .searchBox input {
   flex: 1;
@@ -116,20 +106,7 @@ body {
 
 
 /* Buttons */
-.headBtn {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  background-color: #0e1220;
-  border: none;
-  border-radius: 10px;
-  padding: 0.6rem 1.2rem;
-  color: #fff;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: background 0.3s;
-  height: 30px;
-}
+
 
 .headBtn:hover {
   background-color: #1a1f33;
@@ -212,7 +189,7 @@ body {
   display: flex;
   justify-content: space-between;   /* Compliance left, rest right */
   align-items: center;
-  padding: 0 20px 10px 40px;
+  padding: 0 20px 10px 20px;
   width: 100%;
   flex-wrap: wrap;                  /* Allows wrapping on small screens */
 }
@@ -224,18 +201,7 @@ body {
   gap: 2rem;
 }
 
-/* Search box */
-.searchBox {
-  display: flex;
-  align-items: center;
-  background-color: #fff;           /* White background */
-  border-radius: 10px;
-  border: 1px solid #000;           /* Black border */
-  padding: 0.6rem 1rem;
-  color: #000;                      /* Black text */
-  width: 380px;
-  transition: all 0.3s ease;
-}
+
 
 .searchBox input {
   flex: 1;
@@ -273,26 +239,7 @@ body {
 }
 
 /* ESG & Compliance Zone Buttons */
-.headBtn {
-  display: flex;                  
-  align-items: center;           
-  justify-content: center;        
-  gap: 0.4rem;                   
-  width: 192px;
-  background-color: #fff;       
-  color: #000;                   
-  border: 2px solid #000;        
-  border-radius: 10px; 
-  font-size: 1rem;               
-  cursor: pointer;               
-  padding: 0.6rem 0 0.6rem 1.2rem;  
 
-}
-.headBtn:hover {
-  background-color: #000;  
-  color: #fff;             
-  border-color: #000;
-}
 
 /* Change icon color on hover */
 .headBtn:hover .btnIcon {
@@ -429,67 +376,68 @@ body {
   text-shadow: 0 1px 2px rgba(0,0,0,0.14);
 }
 /* ================= CHARTS ================= */
-.charts {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 0 20px 10px;
-  width: 100%;
-  overflow: hidden; /* prevents children from overflowing */
+.charts_ {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  padding: 0 20px 10px !important;
+  width: 100% !important;
+  overflow: hidden !important; /* prevents children from overflowing */
 }
 
-.chart-row {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap; /* allows wrapping on smaller screens */
-  width: 100%;
+.chart-row_ {
+  display: flex !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important; /* allows wrapping on smaller screens */
+  width: 100% !important;
 }
 
-.chart-card {
-  background: var(--card-bg);
-  border-radius: 10px;
-  padding: 14px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 calc(50% - 16px);   /* ✅ default: 2 per row */
-  min-width: 250px; 
-  max-height: 275px;            /* ✅ keeps them balanced */
-  box-sizing: border-box;
-  overflow: hidden;             /* ✅ charts won’t spill */
+.chart-card_ {
+  background: var(--card-bg) !important;
+  border-radius: 10px !important;
+  padding: 14px !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 calc(50% - 16px) !important;   /* default: 2 per row */
+  min-width: 250px !important;
+  max-height: 275px !important;            /* keeps them balanced */
+  box-sizing: border-box !important;
+  overflow: hidden !important;             /* charts won’t spill */
 }
 
-.chart-card h3 {
-  margin: 0 0 8px;
-  font-size: 15px;
-  font-weight: 600;
+.chart-card_ h3 {
+  margin: 0 0 8px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
 }
 
-/* ✅ Top row more compact (e.g., KPI mini charts) */
-.chart-row.top .chart-card {
-  flex: 1 1 calc(25% - 16px);   /* 4 per row if space allows */
-  min-width: 180px;
-  max-height: 280px;
+/* Top row more compact (e.g., KPI mini charts) */
+.chart-row_.top .chart-card_ {
+  flex: 1 1 calc(25% - 16px) !important;   /* 4 per row if space allows */
+  min-width: 180px !important;
+  max-height: 280px !important;
 }
 
-/* ✅ Responsive adjustments */
+/* Responsive adjustments */
 @media (max-width: 1100px) {
-  .chart-row.top .chart-card {
-    flex: 1 1 calc(33.33% - 16px); /* 3 per row */
+  .chart-row_.top .chart-card_ {
+    flex: 1 1 calc(33.33% - 16px) !important; /* 3 per row */
   }
-  .chart-card {
-    flex: 1 1 calc(50% - 16px);    /* 2 per row */
+  .chart-card_ {
+    flex: 1 1 calc(50% - 16px) !important;    /* 2 per row */
   }
 }
 
 @media (max-width: 800px) {
-  .chart-row.top .chart-card,
-  .chart-card {
-    flex: auto;/* full width on small screens */
-    min-width: 0;
-    max-height: none;
+  .chart-row_.top .chart-card_,
+  .chart-card_ {
+    flex: auto !important; /* full width on small screens */
+    min-width: 0 !important;
+    max-height: none !important;
   }
 }
+
 
 /* ================= TABLE + CALENDAR ================= */
 .charts-container {
@@ -926,9 +874,7 @@ body {
   padding: 6px;
   border: 1px solid #ddd;
 }
-.red { background-color: #e53935; }
-.yellow { background-color: #fbc02d; }
-.green { background-color: #43a047; }
+
 
 /* === Tasks Section === */
 .tasks-header {
@@ -2352,5 +2298,16 @@ stats { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wra
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 10px;
+  text-align: center;
+}
+/* Blue background box for single task */
+.task-text {
+  background: #007bff;
+  color: white;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: block;
+  font-size: 10px;
+  margin: 2px auto 0 auto;
   text-align: center;
 }

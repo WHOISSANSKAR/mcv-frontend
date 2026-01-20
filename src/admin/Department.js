@@ -133,9 +133,14 @@ export default function User() {
       <div className="headSection">
         <div className="compliance-score">Departments</div>
         <div className="rightGroup">
-          <button className="headBtn" onClick={() => navigate("/user_dashboard")}>
-            <FaPlusCircle className="btnIcon" /> Compliance Zone
-          </button>
+          <button
+  className="headBtn"
+  style={{ backgroundColor: "#fff", color: "black" }}
+  onClick={() => navigate("/user_dashboard")}
+>
+  <FaPlusCircle className="btnIcon" /> Compliance Zone
+</button>
+
         </div>
       </div>
 

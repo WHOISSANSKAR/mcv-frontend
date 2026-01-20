@@ -134,9 +134,14 @@ export default function BusinessUnit() {
         <div className="compliance-score">Business Unit</div>
         <div className="rightGroup">
           <div className="buttonGroup">
-            <button className="headBtn" onClick={() => navigate("/user_dashboard")}>
-              <FaPlusCircle className="btnIcon" /> Compliance Zone
-            </button>
+           <button
+  className="headBtn"
+  style={{ backgroundColor: "#fff", color: "black" }}
+  onClick={() => navigate("/user_dashboard")}
+>
+  <FaPlusCircle className="btnIcon" /> Compliance Zone
+</button>
+
           </div>
         </div>
       </div>

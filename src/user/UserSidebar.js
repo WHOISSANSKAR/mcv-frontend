@@ -25,11 +25,13 @@ export default function UserSidebar({ menuOpen, setMenuOpen }) {
       )}
       <div className="menu-header">MyComplianceView</div>
       <ul>
+         <span onClick={() => (window.location.href = "/user_dashboard")}>
         <li className="nav-item">
-          <span onClick={() => (window.location.href = "/user_dashboard")}>
+         
             Dashboard
+              </li>
           </span>
-        </li>
+      
 
         {/* Compliance Dropdown */}
         <li className="nav-item has-dropdown">
@@ -39,7 +41,7 @@ export default function UserSidebar({ menuOpen, setMenuOpen }) {
               <span>Add</span>
               <ul className="sub-dropdown-content">
                 <li onClick={() => (window.location.href = "/add-statutory")}>Statutory</li>
-                <li onClick={() => (window.location.href = "/add-self")}>Self</li>
+                <li onClick={() => (window.location.href = "/add-self")}>Custom</li>
                 <li onClick={() => (window.location.href = "/add-dc")}>DC Sustainability</li>
                 <li onClick={() => (window.location.href = "/add-geo")}>Geo-Spatial</li>
                 <li onClick={() => (window.location.href = "/add-dpdp")}>DPDP Act</li>
@@ -51,7 +53,7 @@ export default function UserSidebar({ menuOpen, setMenuOpen }) {
               <span>Manage</span>
               <ul className="sub-dropdown-content">
                 <li onClick={() => (window.location.href = "/manage-statutory")}>Statutory</li>
-                <li onClick={() => (window.location.href = "/manage-self")}>Self</li>
+                <li onClick={() => (window.location.href = "/manage-self")}>Custom</li>
                 <li onClick={() => (window.location.href = "/manage-dc")}>DC Sustainability</li>
                 <li onClick={() => (window.location.href = "/manage-geo")}>Geo-Spatial</li>
                 <li onClick={() => (window.location.href = "/manage-dpdp")}>DPDP Act</li>
@@ -78,7 +80,7 @@ export default function UserSidebar({ menuOpen, setMenuOpen }) {
             <li className="sub-dropdown">
               <span>DPDPA</span>
               <ul className="sub-dropdown-content">
-                <li onClick={() => (window.location.href = "/DPDPA-start")}>Start</li>
+                <li onClick={() => (window.location.href = "/DPDPA_test")}>Start</li>
                 <li onClick={() => (window.location.href = "/DPDPA-view")}>View</li>
               </ul>
             </li>

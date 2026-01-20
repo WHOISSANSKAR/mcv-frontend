@@ -14,9 +14,25 @@ export default function AddStatutory() {
   const [act, setAct] = useState("");
 
   const [errors, setErrors] = useState({});
+
+  const [errorVisible, setErrorVisible] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ Fetch all countries from backend
+  // / ERROR fade-out effects
+  useEffect(() => {
+    if (errors.api) {
+      setErrorVisible(true);
+      const timer = setTimeout(() => setErrorVisible(false), 4500);
+      const removeTimer = setTimeout(() => setErrors({}), 1000);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(removeTimer);
+      };
+    }
+  }, [errors.api]);
+
+  
+  // Fetch countries
   useEffect(() => {
     fetch("http://localhost:5000/compliance/countries")
       .then((res) => res.json())
@@ -25,16 +41,16 @@ export default function AddStatutory() {
           setCountries(data.countries);
           setCountry(data.countries[0] || "");
         } else {
-          setCountries([]); // no country found
+          setCountries([]);
         }
       })
       .catch((err) => {
         console.error(err);
-        setCountries([]); // error also shows no country found
+        setCountries([]);
       });
   }, []);
 
-  // ✅ Fetch acts dynamically when country changes
+  // Fetch acts after country change
   useEffect(() => {
     if (!country) {
       setActs([]);
@@ -48,30 +64,35 @@ export default function AddStatutory() {
           setActs(data.acts);
           setAct("");
         } else {
-          setActs([]); // no act found
+          setActs([]);
         }
       })
       .catch((err) => {
         console.error(err);
-        setActs([]); // error also shows no act found
+        setActs([]);
       });
   }, [country]);
 
-  // ✅ Handle submit → save selected values + redirect
   const handleFilter = (e) => {
     e.preventDefault();
+    setErrors({});
 
     const newErrors = {};
-    if (!country) newErrors.country = "Country is required";
-    if (!act) newErrors.act = "Act is required";
+    if (!country) newErrors.api = "Country is required";
+    if (!act) newErrors.api = "Act is required";
 
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
     localStorage.setItem("selectedCountry", country);
     localStorage.setItem("selectedAct", act);
 
-    navigate("/statutory_info");
+
+    setTimeout(() => {
+      navigate("/statutory_info");
+    }, 800);
   };
 
   return (
@@ -84,9 +105,26 @@ export default function AddStatutory() {
         <main style={{ flex: 1, padding: "1rem 2rem", overflowY: "auto" }}>
           <h2>Add Statutory</h2>
 
-          <form onSubmit={handleFilter} className="add-user-form">
+          {/* SAME MESSAGE UI AS AddUser */}
+         <div
+  className="messages-top"
+  style={{
+    margin: "0 auto 1rem auto",
+    width: "50%",
+    display: "flex",
+    justifyContent: "center",
+    textAlign: "center",
+  }}
+>
+  {errors.api && (
+    <div className={`login-error ${!errorVisible ? "fade-out" : ""}`}>
+      {errors.api}
+    </div>
+  )}
+</div>
 
-            {/* ✅ Country Dropdown */}
+
+          <form onSubmit={handleFilter} className="add-user-form">
             <label>
               Select Country
               <select
@@ -104,10 +142,8 @@ export default function AddStatutory() {
                   ))
                 )}
               </select>
-              {errors.country && <span className="error">{errors.country}</span>}
             </label>
 
-            {/* ✅ Acts Dropdown */}
             <label>
               Select Act
               <select
@@ -128,17 +164,14 @@ export default function AddStatutory() {
                   </>
                 )}
               </select>
-              {errors.act && <span className="error">{errors.act}</span>}
             </label>
 
-            {/* ✅ Filter Button */}
             <label>
               <button type="submit" className="submit-btn">
                 Filter
               </button>
             </label>
 
-            {/* ✅ Not found link */}
             <label>
               <a
                 href="/NotFound"

@@ -10,6 +10,7 @@ import AddUser from "./admin/add-user";
 import EditUser from "./admin/edit-user";
 import AddBU from "./admin/AddBu";
 import BusinessUnit from "./admin/BusinessUnit";
+import DPDPDashboard from "./admin/DPDPDashboard";
 import AddDepartment from "./admin/AddDepartment";
 import Department from "./admin/Department";
 import Restore from "./admin/Restore";
@@ -55,6 +56,7 @@ import Tns from "./user/tns";
 import DPDPAStart from "./user/DPDPA-start";
 import DPDPAView from "./user/DPDPA-view";
 import DPDPStart from "./user/DPDP-start";
+import DPDPAtest from "./user/DPDP_test";
 import DPDPView from "./user/DPDP-view";
 
 
@@ -161,6 +163,14 @@ function App() {
           }
         />
         <Route
+          path="/dpdp_dashboard"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <DPDPDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/BusinessUnit"
           element={
             <ProtectedRoute roles={["admin"]}>
@@ -193,7 +203,7 @@ function App() {
           }
         />
         <Route
-          path="/General"
+          path="/comprehensive"
           element={
             <ProtectedRoute roles={["admin"]}>
               <General />
@@ -258,6 +268,14 @@ function App() {
   element={
     <ProtectedRoute roles={["user", "admin"]}>
       <AssessmentPage/>
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/DPDPA_test"
+  element={
+    <ProtectedRoute roles={["user", "admin"]}>
+      <DPDPAtest/>
     </ProtectedRoute>
   }
 />
