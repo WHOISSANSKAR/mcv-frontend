@@ -7,74 +7,107 @@ export default function AddSelf() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [formData, setFormData] = useState({
-    compliance_id: "",
-    compliance_name: "",
-    start_date: "",
-    end_date: "",
-    comply_by: "",
-    description: "",
-    repeat_type: "months",
-    repeat_months: 1,
-    repeat_days: "",
-    reminder_days: 1,
-    add_escalation: false,
-    escalation_email: "",
-    escalation_reminder_days: "",
+    regcmp_compliance_id: "",
+    regcmp_act: "",
+    regcmp_particular: "",
+    regcmp_description: "",
+    regcmp_long_description: "",
+    regcmp_title: "",
+    regcmp_start_date: "",
+    regcmp_end_date: "",
+    regcmp_action_date: "",
+    regcmp_reminder_days: 1,
+    regcmp_escalation_email: "",
+    regcmp_escalation_reminder_days: "",
+    regcmp_status: "Upcoming",
+    regcmp_approvers_email: "",
   });
 
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState("");
+  const [apiError, setApiError] = useState("");
 
-  // ✅ Load saved compliance row data on first render
+  // Autofill from selected row
   useEffect(() => {
     const savedRow = localStorage.getItem("selectedComplianceRow");
     if (savedRow) {
       const row = JSON.parse(savedRow);
-
-      // ✅ Autofill fields that we have values for
       setFormData((prev) => ({
         ...prev,
-        compliance_id: row.complianceId || "",
-        compliance_name: row.particular || "",
-        description: row.description || "",
+        regcmp_compliance_id: row.complianceId || "",
+        regcmp_particular: row.particular || "",
+        regcmp_description: row.description || "",
+        regcmp_title: row.particular || "",
       }));
     }
   }, []);
 
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: value,
     }));
-
-    setErrors((prev) => ({ ...prev, [name]: "" }));
+    setErrors({});
     setSuccessMsg("");
+    setApiError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
     const newErrors = {};
-
-    if (!formData.compliance_name)
-      newErrors.compliance_name = "Compliance Name is required";
-
-    if (!formData.start_date)
-      newErrors.start_date = "Start Date is required";
-
-    if (!formData.end_date)
-      newErrors.end_date = "End Date is required";
+    if (!formData.regcmp_particular) newErrors.regcmp_particular = "Name required";
+    if (!formData.regcmp_start_date) newErrors.regcmp_start_date = "Start Date required";
+    if (!formData.regcmp_end_date) newErrors.regcmp_end_date = "End Date required";
+    if (!formData.regcmp_action_date) newErrors.regcmp_action_date = "Action Date required";
+    if (!formData.regcmp_approvers_email) newErrors.regcmp_approvers_email = "Approvers Email required";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    console.log("Form submitted:", formData);
-    setSuccessMsg("✅ Compliance created successfully!");
+    const payload = {
+      ...formData,
+      regcmp_reminder_days: parseInt(formData.regcmp_reminder_days) || 0,
+      regcmp_escalation_reminder_days: parseInt(formData.regcmp_escalation_reminder_days) || 0,
+    };
 
-    // API call or reset can go here
+    try {
+      const res = await fetch("http://localhost:5000/compliance/add/regulatory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (res.status === 201) {
+        setSuccessMsg("✅ Compliance created successfully!");
+        setFormData({
+          regcmp_compliance_id: "",
+          regcmp_act: "",
+          regcmp_particular: "",
+          regcmp_description: "",
+          regcmp_long_description: "",
+          regcmp_title: "",
+          regcmp_start_date: "",
+          regcmp_end_date: "",
+          regcmp_action_date: "",
+          regcmp_reminder_days: 1,
+          regcmp_escalation_email: "",
+          regcmp_escalation_reminder_days: "",
+          regcmp_status: "Upcoming",
+          regcmp_approvers_email: "",
+        });
+      } else {
+        setApiError(data.error || "Something went wrong");
+      }
+    } catch (err) {
+      setApiError(err.message);
+    }
   };
 
   return (
@@ -83,185 +116,94 @@ export default function AddSelf() {
       <UserHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
 
       <div className="form-container">
-        <h2>Add Compliance</h2>
+        <h2>Add Regulatory Compliance</h2>
 
         <form onSubmit={handleSubmit} className="add-user-form">
-
-          {/* ✅ Autofilled */}
           <label>
             Compliance ID
-            <input
-              type="text"
-              name="compliance_id"
-              value={formData.compliance_id}
-              readOnly
-            />
+            <input type="text" name="regcmp_compliance_id" value={formData.regcmp_compliance_id} readOnly />
           </label>
 
-          {/* ✅ Autofilled name */}
           <label>
-            Compliance Name
-            <input
-              type="text"
-              name="compliance_name"
-              value={formData.compliance_name}
-              onChange={handleInputChange}
-            />
-            {errors.compliance_name && (
-              <span className="error">{errors.compliance_name}</span>
-            )}
+            Act
+            <input type="text" name="regcmp_act" value={formData.regcmp_act} onChange={handleInputChange} />
           </label>
 
-          {/* User must enter these */}
+          <label>
+            Compliance Particular / Name
+            <input type="text" name="regcmp_particular" value={formData.regcmp_particular} onChange={handleInputChange} />
+            {errors.regcmp_particular && <span className="error">{errors.regcmp_particular}</span>}
+          </label>
+
+          <label>
+            Description
+            <textarea name="regcmp_description" value={formData.regcmp_description} onChange={handleInputChange}></textarea>
+          </label>
+
+          <label>
+            Long Description
+            <textarea name="regcmp_long_description" value={formData.regcmp_long_description} onChange={handleInputChange}></textarea>
+          </label>
+
+          <label>
+            Title
+            <input type="text" name="regcmp_title" value={formData.regcmp_title} onChange={handleInputChange} />
+          </label>
+
           <label>
             Start Date
-            <input
-              type="date"
-              name="start_date"
-              value={formData.start_date}
-              onChange={handleInputChange}
-            />
-            {errors.start_date && (
-              <span className="error">{errors.start_date}</span>
-            )}
+            <input type="date" name="regcmp_start_date" value={formData.regcmp_start_date} onChange={handleInputChange} />
+            {errors.regcmp_start_date && <span className="error">{errors.regcmp_start_date}</span>}
           </label>
 
           <label>
             End Date
-            <input
-              type="date"
-              name="end_date"
-              value={formData.end_date}
-              onChange={handleInputChange}
-            />
-            {errors.end_date && (
-              <span className="error">{errors.end_date}</span>
-            )}
+            <input type="date" name="regcmp_end_date" value={formData.regcmp_end_date} onChange={handleInputChange} />
+            {errors.regcmp_end_date && <span className="error">{errors.regcmp_end_date}</span>}
           </label>
 
           <label>
-            Comply By
-            <input
-              type="date"
-              name="comply_by"
-              value={formData.comply_by}
-              onChange={handleInputChange}
-            />
+            Action Date
+            <input type="date" name="regcmp_action_date" value={formData.regcmp_action_date} onChange={handleInputChange} />
+            {errors.regcmp_action_date && <span className="error">{errors.regcmp_action_date}</span>}
           </label>
 
-          {/* ✅ Autofilled description */}
           <label>
-            Description
-            <textarea
-              name="description"
-              value={formData.description}
+            Approvers Email
+            <input
+              type="email"
+              name="regcmp_approvers_email"
+              value={formData.regcmp_approvers_email}
               onChange={handleInputChange}
-            ></textarea>
-          </label>
-
-          {/* Repeat Type Section */}
-          <label className="autocomplete">
-            Repeat Type
-            <div>
-              <input
-                type="radio"
-                name="repeat_type"
-                value="months"
-                checked={formData.repeat_type === "months"}
-                onChange={handleInputChange}
-              />
-              <input
-                type="number"
-                name="repeat_months"
-                value={formData.repeat_months}
-                min="1"
-                style={{ width: "60px" }}
-                onChange={handleInputChange}
-              />{" "}
-              Months
-            </div>
-
-            <div>
-              <input
-                type="radio"
-                name="repeat_type"
-                value="days"
-                checked={formData.repeat_type === "days"}
-                onChange={handleInputChange}
-              />
-              <input
-                type="number"
-                name="repeat_days"
-                value={formData.repeat_days}
-                style={{ width: "60px" }}
-                onChange={handleInputChange}
-              />{" "}
-              Days
-            </div>
-
-            <div>
-              <input
-                type="radio"
-                name="repeat_type"
-                value="none"
-                checked={formData.repeat_type === "none"}
-                onChange={handleInputChange}
-              />{" "}
-              Do Not Repeat
-            </div>
+              placeholder="Comma-separated emails"
+            />
+            {errors.regcmp_approvers_email && <span className="error">{errors.regcmp_approvers_email}</span>}
           </label>
 
           <label>
             Reminder Days
-            <input
-              type="number"
-              name="reminder_days"
-              value={formData.reminder_days}
-              min="1"
-              style={{ width: "60px" }}
-              onChange={handleInputChange}
-            />{" "}
-            Days Prior to Action Dates
-          </label>
-
-          <label>
-            <input
-              type="checkbox"
-              name="add_escalation"
-              checked={formData.add_escalation}
-              onChange={handleInputChange}
-            />{" "}
-            Add Escalation
+            <input type="number" name="regcmp_reminder_days" value={formData.regcmp_reminder_days} onChange={handleInputChange} style={{ width: "60px" }} />
           </label>
 
           <label>
             Escalation Email
             <input
               type="email"
-              name="escalation_email"
-              value={formData.escalation_email}
+              name="regcmp_escalation_email"
+              value={formData.regcmp_escalation_email}
               onChange={handleInputChange}
-              readOnly={!formData.add_escalation}
             />
           </label>
 
           <label>
-            Reminder of Escalation Email
-            <input
-              type="number"
-              name="escalation_reminder_days"
-              value={formData.escalation_reminder_days}
-              style={{ width: "60px" }}
-              onChange={handleInputChange}
-            />{" "}
-            Days Prior to Action Dates
+            Escalation Reminder Days
+            <input type="number" name="regcmp_escalation_reminder_days" value={formData.regcmp_escalation_reminder_days} onChange={handleInputChange} style={{ width: "60px" }} />
           </label>
 
           {successMsg && <span className="success-msg">{successMsg}</span>}
+          {apiError && <span className="error">{apiError}</span>}
 
-          <button type="submit" className="submit-btn">
-            Create Compliance
-          </button>
+          <button type="submit" className="submit-btn">Create Compliance</button>
         </form>
       </div>
     </div>

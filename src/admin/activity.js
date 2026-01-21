@@ -58,14 +58,23 @@ export default function Activity() {
   }, [navigate]);
 
   // ✅ Fetch data
- useEffect(() => {
+useEffect(() => {
   async function fetchLogs() {
     try {
-      const res = await fetch("http://localhost:5000/activity_log", {
-  credentials: "include",
-});
+      const token = localStorage.getItem("token");
 
-  
+      if (!token) {
+        console.error("No JWT token found");
+        navigate("/", { replace: true });
+        return;
+      }
+
+      const res = await fetch("http://localhost:5000/activity_log/", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const json = await res.json();
 
@@ -73,10 +82,11 @@ export default function Activity() {
         const formatted = json.activities.map((item) => ({
           department: item.acty_department || "",
           email: item.acty_email || "",
-          date: item.acty_date ? item.acty_date.split("T")[0] : "", // keeps YYYY-MM-DD
+          date: item.acty_date ? item.acty_date.split("T")[0] : "",
           time: item.acty_time || "",
           action: item.acty_action || "",
         }));
+
         setData(formatted);
       } else {
         console.error("API Error:", json);
@@ -87,7 +97,8 @@ export default function Activity() {
   }
 
   fetchLogs();
-}, []);
+}, [navigate]);
+
 
 
   // ✅ Filtering + sorting

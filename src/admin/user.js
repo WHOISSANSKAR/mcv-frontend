@@ -17,31 +17,37 @@ export default function User() {
   const navigate = useNavigate();
 
   // ✅ Check admin access and fetch data
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (!isLoggedIn || user.usrlst_role?.toLowerCase() !== "admin") {
-      navigate("/", { replace: true });
-      return;
-    }
+ useEffect(() => {
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  if (!isLoggedIn || user.usrlst_role?.toLowerCase() !== "admin") {
+    navigate("/", { replace: true });
+    return;
+  }
 
-    async function fetchUsers() {
-      try {
-        setLoading(true);
-        const response = await fetch("http://localhost:5000/user/list");
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        const users = await response.json();
-        setData(users);
-        setLoading(false);
-      } catch (err) {
-        console.error("Failed to fetch users:", err);
-        setError("Failed to fetch users from server.");
-        setLoading(false);
-      }
+  async function fetchUsers() {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token"); // ✅ get JWT
+      const response = await fetch("http://localhost:5000/user/list", {
+        headers: {
+          "Authorization": `Bearer ${token}`, // ✅ send JWT
+        },
+      });
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      const users = await response.json();
+      setData(users); // ✅ admins already excluded by backend
+      setLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch users:", err);
+      setError("Failed to fetch users from server.");
+      setLoading(false);
     }
+  }
 
-    fetchUsers();
-  }, [navigate]);
+  fetchUsers();
+}, [navigate]);
+
 
   // ✅ GLOBAL SEARCH ACROSS ALL COLUMNS
   const filteredData = useMemo(() => {

@@ -278,83 +278,89 @@ export default function AddUser() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSuccessMsg("");
-    setErrors({});
-    setPopup({ visible: false, type: "", value: "" });
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setSuccessMsg("");
+  setErrors({});
+  setPopup({ visible: false, type: "", value: "" });
 
-    const trimmedData = {};
-    Object.keys(formData).forEach((key) => {
-      const value = formData[key];
-      trimmedData[key] = value != null && typeof value === "string" ? value.trim() : value;
-    });
+  const trimmedData = {};
+  Object.keys(formData).forEach((key) => {
+    const value = formData[key];
+    trimmedData[key] = value != null && typeof value === "string" ? value.trim() : value;
+  });
 
-    const requiredFields = [
-      "company",
-      "username",
-      "email",
-      "contact",
-      "businessUnit",
-      "department",
-      "escalationEmail",
-    ];
-    for (const field of requiredFields) {
-      if (!trimmedData[field] || trimmedData[field].length === 0) {
-        setErrors({ api: "All fields are required and cannot be blank or contain only spaces." });
-        return;
-      }
-    }
-
-    if (trimmedData.contact.length !== 10) {
-      setErrors({ api: "Contact number must be exactly 10 digits." });
+  const requiredFields = [
+    "company",
+    "username",
+    "email",
+    "contact",
+    "businessUnit",
+    "department",
+    "escalationEmail",
+  ];
+  for (const field of requiredFields) {
+    if (!trimmedData[field] || trimmedData[field].length === 0) {
+      setErrors({ api: "All fields are required and cannot be blank or contain only spaces." });
       return;
     }
+  }
 
-    localStorage.removeItem("addUserForm");
+  if (trimmedData.contact.length !== 10) {
+    setErrors({ api: "Contact number must be exactly 10 digits." });
+    return;
+  }
 
-    try {
-      const payload = {
-        user_id: Number(userId),
-        name: trimmedData.username,
-        email: trimmedData.email,
-        contact: trimmedData.contact,
-        role: "user",
-        department: trimmedData.department,
-        business_unit: trimmedData.businessUnit,
-        escalation_mail: trimmedData.escalationEmail,
-        company_name: trimmedData.company,
-      };
+  localStorage.removeItem("addUserForm");
 
-      const response = await fetch("http://localhost:5000/user/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+  try {
+    const payload = {
+      user_id: Number(userId),
+      name: trimmedData.username,
+      email: trimmedData.email,
+      contact: trimmedData.contact,
+      role: "user",
+      department: trimmedData.department,
+      business_unit: trimmedData.businessUnit,
+      escalation_mail: trimmedData.escalationEmail,
+      company_name: trimmedData.company,
+    };
+
+    const token = localStorage.getItem("token"); // ✅ JWT token from login
+
+    const response = await fetch("http://localhost:5000/user/add", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`, // ✅ Added Authorization header
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setErrors({ api: data.error || "Failed to add user" });
+    } else {
+      setSuccessMsg("✅ User added successfully!");
+      setFormData({
+        company: "",
+        username: "",
+        department: "",
+        departmentId: "",
+        email: "",
+        contact: "",
+        escalationEmail: "",
+        businessUnit: "",
+        businessUnitId: "",
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setErrors({ api: data.error || "Failed to add user" });
-      } else {
-        setSuccessMsg("✅ User added successfully!");
-        setFormData({
-          company: "",
-          username: "",
-          department: "",
-          departmentId: "",
-          email: "",
-          contact: "",
-          escalationEmail: "",
-          businessUnit: "",
-          businessUnitId: "",
-        });
-      }
-    } catch (err) {
-      console.error("Error adding user:", err);
-      setErrors({ api: "Failed to add user. Please try again." });
     }
-  };
+  } catch (err) {
+    console.error("Error adding user:", err);
+    setErrors({ api: "Failed to add user. Please try again." });
+  }
+};
+
 
   useEffect(() => {
     if (errors.api) {
