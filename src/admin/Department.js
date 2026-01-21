@@ -4,6 +4,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
+import { apiFetch } from "../api_call";
 
 export default function User() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -32,23 +33,7 @@ export default function User() {
 
     const fetchDepartments = async () => {
       try {
-        const response = await fetch("http://localhost:5000/user/departments/all", {
-          method: "GET",
-          credentials: "include",
-        });
-
-        if (response.status === 401) {
-          setErrorMsg("Unauthorized access. Please login again.");
-          setLoading(false);
-          return;
-        }
-
-        if (!response.ok) {
-          const txt = await response.text();
-          throw new Error(txt);
-        }
-
-        const result = await response.json();
+        const result = await apiFetch("/user/departments/all");
 
         if (!Array.isArray(result) || result.length === 0) {
           setErrorMsg("No departments found.");
@@ -64,8 +49,8 @@ export default function User() {
           setDepartments(formatted);
         }
       } catch (err) {
-        console.error("Fetch error:", err);
-        setErrorMsg("Failed to load departments.");
+        console.error("Error loading departments:", err);
+        setErrorMsg(err.message || "Failed to load departments.");
       } finally {
         setLoading(false);
       }
@@ -134,13 +119,12 @@ export default function User() {
         <div className="compliance-score">Departments</div>
         <div className="rightGroup">
           <button
-  className="headBtn"
-  style={{ backgroundColor: "#fff", color: "black" }}
-  onClick={() => navigate("/user_dashboard")}
->
-  <FaPlusCircle className="btnIcon" /> Compliance Zone
-</button>
-
+            className="headBtn"
+            style={{ backgroundColor: "#fff", color: "black" }}
+            onClick={() => navigate("/user_dashboard")}
+          >
+            <FaPlusCircle className="btnIcon" /> Compliance Zone
+          </button>
         </div>
       </div>
 

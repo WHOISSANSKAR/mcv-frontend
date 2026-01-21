@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
+import { apiFetch } from "../api_call"; // ✅ centralized API
 import "./Dashboard.css";
 
 export default function AddStatutory() {
@@ -14,7 +15,6 @@ export default function AddStatutory() {
   const [act, setAct] = useState("");
 
   const [errors, setErrors] = useState({});
-
   const [errorVisible, setErrorVisible] = useState(false);
   const navigate = useNavigate();
 
@@ -31,23 +31,23 @@ export default function AddStatutory() {
     }
   }, [errors.api]);
 
-  
   // Fetch countries
   useEffect(() => {
-    fetch("http://localhost:5000/compliance/countries")
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchCountries = async () => {
+      try {
+        const data = await apiFetch("/compliance/countries");
         if (data.countries && data.countries.length > 0) {
           setCountries(data.countries);
           setCountry(data.countries[0] || "");
         } else {
           setCountries([]);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error(err);
         setCountries([]);
-      });
+      }
+    };
+    fetchCountries();
   }, []);
 
   // Fetch acts after country change
@@ -57,20 +57,22 @@ export default function AddStatutory() {
       return;
     }
 
-    fetch(`http://localhost:5000/compliance/acts?country=${country}`)
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchActs = async () => {
+      try {
+        const data = await apiFetch(`/compliance/acts?country=${country}`);
         if (data.acts && data.acts.length > 0) {
           setActs(data.acts);
           setAct("");
         } else {
           setActs([]);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error(err);
         setActs([]);
-      });
+      }
+    };
+
+    fetchActs();
   }, [country]);
 
   const handleFilter = (e) => {
@@ -88,7 +90,6 @@ export default function AddStatutory() {
 
     localStorage.setItem("selectedCountry", country);
     localStorage.setItem("selectedAct", act);
-
 
     setTimeout(() => {
       navigate("/statutory_info");

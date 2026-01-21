@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import "./Dashboard.css";
+import { apiFetch } from "../api_call";
+
 
 function cleanDate(dateString) {
   if (!dateString) return "";
@@ -69,16 +71,14 @@ useEffect(() => {
         return;
       }
 
-      const res = await fetch("http://localhost:5000/activity_log/", {
+      const json = await apiFetch("/activity_log/", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      const json = await res.json();
-
-      if (res.ok && json.activities) {
+      if (json.activities) {
         const formatted = json.activities.map((item) => ({
           department: item.acty_department || "",
           email: item.acty_email || "",

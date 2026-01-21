@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
+import { apiFetch } from "../api_call"; // ✅ centralized API
 import "./Dashboard.css";
 
 export default function AddSelf() {
@@ -47,15 +48,13 @@ export default function AddSelf() {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/compliance/add", {
+      const data = await apiFetch("/compliance/add", {
         method: "POST",
-        credentials: "include", // very important for session (user_id)
-        headers: {
-          "Content-Type": "application/json",
-        },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cmplst_compliance_key: formData.compliance_id,
-          cmplst_country: "India", // you can make this dynamic later
+          cmplst_country: "India",
           cmplst_act: formData.compliance_name,
           cmplst_particular: formData.compliance_name,
           cmplst_start_date: formData.start_date,
@@ -65,29 +64,23 @@ export default function AddSelf() {
         }),
       });
 
-      const data = await response.json();
+      setSuccessMsg("✅ Compliance created successfully!");
+      console.log("API Success:", data);
 
-      if (response.ok) {
-        setSuccessMsg("✅ Compliance created successfully!");
-        console.log("API Success:", data);
-        // optionally reset form
-        setFormData((prev) => ({
-          ...prev,
-          compliance_name: "",
-          start_date: "",
-          end_date: "",
-          comply_by: "",
-          description: "",
-        }));
-      } else {
-        console.error("API Error:", data);
-        setSuccessMsg("❌ " + (data.error || "Failed to create compliance"));
-      }
+      // optionally reset form
+      setFormData((prev) => ({
+        ...prev,
+        compliance_name: "",
+        start_date: "",
+        end_date: "",
+        comply_by: "",
+        description: "",
+      }));
     } catch (error) {
-      console.error("Error:", error);
-      setSuccessMsg("❌ Error connecting to the server");
+      console.error("API Error:", error);
+      setSuccessMsg("❌ " + (error?.message || "Failed to create compliance"));
     }
-  };
+  }
 
   return (
     <div className="add-user">

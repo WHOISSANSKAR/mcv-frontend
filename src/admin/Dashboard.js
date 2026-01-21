@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import { apiFetch } from "../api_call"; 
 import {
   ResponsiveContainer,
   LineChart,
@@ -114,57 +115,45 @@ const customTicks = [paddedMin, paddedMin + step, max];
   };
 
   const fetchEvents = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("http://localhost:5000/calendar/list", {
-  method: "GET",
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
+  setLoading(true);
+  try {
+    const data = await apiFetch("/calendar/list"); // ✅ use apiFetch
+    if (Array.isArray(data)) {
+      const mappedTasks = data.map((t) => ({
+        id: t.cal_id,
+        cal_event: t.cal_event || "No Event",
+        cal_date: parseBackendDate(t.cal_date),
+      }));
 
-      const data = await res.json();
+      setTasks(mappedTasks);
 
-      if (Array.isArray(data)) {
-        const mappedTasks = data.map((t) => ({
-          id: t.cal_id,
-          cal_event: t.cal_event || "No Event",
-          cal_date: parseBackendDate(t.cal_date),
-        }));
+      const formattedEvents = mappedTasks.map((t) => ({
+        title: t.cal_event,
+        start: t.cal_date,
+      }));
 
-        setTasks(mappedTasks);
-
-        const formattedEvents = mappedTasks.map((t) => ({
-          title: t.cal_event,
-          start: t.cal_date,
-        }));
-
-        setEvents(formattedEvents);
-      } else {
-        console.error("Invalid data structure:", data);
-      }
-    } catch (err) {
-      console.error("Error fetching events:", err);
-    } finally {
-      setLoading(false);
+      setEvents(formattedEvents);
+    } else {
+      console.error("Invalid data structure:", data);
     }
-  };
+  } catch (err) {
+    console.error("Error fetching events:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const fetchRecentCompliances = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/compliance/list", {
-        method: "GET",
-        credentials: "include",
-      });
-
-      const data = await res.json();
-      if (res.ok && data.compliances) {
-        setRecentCompliances(data.compliances.slice(0, 5));
-      }
-    } catch (err) {
-      console.error("Error loading compliances:", err);
+  try {
+    const data = await apiFetch("/compliance/list"); // ✅ use apiFetch
+    if (data.compliances) {
+      setRecentCompliances(data.compliances.slice(0, 5));
     }
-  };
+  } catch (err) {
+    console.error("Error loading compliances:", err);
+  }
+};
 
   useEffect(() => {
     fetchEvents();
@@ -172,31 +161,19 @@ const customTicks = [paddedMin, paddedMin + step, max];
   }, []);
 
   const addTask = async (e) => {
-    e.preventDefault();
-    if (!newTaskText || !selectedDate) return;
+  e.preventDefault();
+  if (!newTaskText || !selectedDate) return;
 
-    try {
-      const res = await fetch("http://localhost:5000/calendar/add", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  },
-  body: JSON.stringify({ date: selectedDate, event: newTaskText }),
-});
-
-      const body = await res.json();
-      if (res.ok) {
-        await fetchEvents();
-        setNewTaskText("");
-        setShowModal(false);
-      } else {
-        alert(body.error || "Error adding event");
-      }
-    } catch (err) {
-      alert("Network error");
-    }
-  };
+  try {
+    const body = { date: selectedDate, event: newTaskText };
+    await apiFetch("/calendar/add", { method: "POST", body }); // ✅ use apiFetch
+    await fetchEvents();
+    setNewTaskText("");
+    setShowModal(false);
+  } catch (err) {
+    alert("Error adding task");
+  }
+};
 
   const handleDateClick = (info) => {
     const date = info.date;
@@ -606,49 +583,28 @@ function TaskItem({ task, refresh, selectedDate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(task.cal_event);
 
-  const handleUpdate = async () => {
-    if (!editText.trim()) return;
-    try {
-    const res = await fetch(`http://localhost:5000/calendar/edit/${task.id}`, {
-  method: "PUT",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${localStorage.getItem("token")}`,
-  },
-  body: JSON.stringify({ date: selectedDate, event: editText }),
-});
-const body = await res.json(); // ✅ now res is defined
-if (res.ok) {
-        setIsEditing(false);
-        await refresh();
-      } else {
-        alert(body.error || "Failed to update event");
-      }
-    } catch (err) {
-      alert("Network error while updating");
-      console.error(err);
-    }
-  };
+ const handleUpdate = async () => {
+  if (!editText.trim()) return;
+  try {
+    const body = { date: selectedDate, event: editText };
+    await apiFetch(`/calendar/edit/${task.id}`, { method: "PUT", body }); // ✅ apiFetch
+    setIsEditing(false);
+    await refresh();
+  } catch (err) {
+    alert("Failed to update task");
+    console.error(err);
+  }
+};
 
   const handleDelete = async () => {
-    try {
-    const res = await fetch(`http://localhost:5000/calendar/delete/${task.id}`, {
-  method: "DELETE",
-  headers: {
-    Authorization: `Bearer ${localStorage.getItem("token")}`,
-  },
-});
-const body = await res.json(); 
-      if (res.ok) {
-        await refresh();
-      } else {
-        alert(body.error || "Failed to delete event");
-      }
-    } catch (err) {
-      alert("Network error while deleting");
-      console.error(err);
-    }
-  };
+  try {
+    await apiFetch(`/calendar/delete/${task.id}`, { method: "DELETE" }); // ✅ apiFetch
+    await refresh();
+  } catch (err) {
+    alert("Failed to delete task");
+    console.error(err);
+  }
+};
 
   return (
     <li className="task-item" style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>

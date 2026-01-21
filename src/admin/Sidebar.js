@@ -31,7 +31,7 @@ export default function Sidebar({ menuOpen, setMenuOpen }) {
           <FaUser className="menu-icon" /> Entities
         </li>
         
-        <li className="nav-item" onClick={() => (window.location.href = "/General")}>
+        <li className="nav-item" onClick={() => (window.location.href = "/comprehensive")}>
           <FaFileAlt className="menu-icon" /> Reports
         </li>
       {/*

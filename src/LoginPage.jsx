@@ -13,6 +13,7 @@ import {
 } from "react-icons/fa";
 import { FaFacebookF, FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "./api_call";
 
 const features = [
   {
@@ -94,61 +95,55 @@ const LoginPage = ({ setIsLoggedIn }) => {
 
   // ✅ UPDATED LOGIN METHOD for new API + your paths
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (password.trim().length < 8) {
-      setLoginError("Password must be at least 8 characters long.");
-      setErrorKey((prev) => prev + 1);
-      return;
-    }
+  if (password.trim().length < 8) {
+    setLoginError("Password must be at least 8 characters long.");
+    setErrorKey((prev) => prev + 1);
+    return;
+  }
 
-    try {
-      const response = await fetch("http://localhost:5000/login/", {
+  try {
+    // Use apiFetch, no need to call response.json()
+    const data = await apiFetch("/login/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email, password }),
+    });
 
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // ✅ required for Flask session cookies
-        body: JSON.stringify({ email, password }),
-      });
+    // ✅ SAVE JWT TOKEN
+    localStorage.setItem("token", data.token);
 
-      const data = await response.json();
+    // ✅ SAVE USER INFO
+    localStorage.setItem("user", JSON.stringify(data.user));
 
-      if (!response.ok) {
-        setLoginError(data.error || "Invalid email or password");
-        setErrorKey((prev) => prev + 1);
-        return;
-      }
-// ✅ SAVE JWT TOKEN
-localStorage.setItem("token", data.token);
+    // ✅ LOGIN FLAG
+    localStorage.setItem("isLoggedIn", "true");
 
-// ✅ SAVE USER INFO
-localStorage.setItem("user", JSON.stringify(data.user));
+    // ✅ UPDATE APP STATE
+    setIsLoggedIn(true);
 
-// ✅ LOGIN FLAG
-localStorage.setItem("isLoggedIn", "true");
+    closeLoginModal();
 
-// ✅ UPDATE APP STATE
-setIsLoggedIn(true);
+    // ✅ REDIRECT BASED ON ROLE
+    const role = data.user?.usrlst_role?.toLowerCase();
 
-      closeLoginModal();
-
-      // ✅ YOUR CUSTOM PATHS HERE (override backend paths)
-      const role = data.user?.usrlst_role?.toLowerCase();
-
-      if (role === "admin") {
-        window.location.href = "/dashboard";          // ✅ your admin path
-      } else if (role === "user") {
-        window.location.href = "/user_dashboard";     // ✅ your user path
-      } else {
-        setLoginError("Login successful, but role unknown.");
-        setErrorKey((prev) => prev + 1);
-      }
-    } catch (err) {
-      console.error("Login failed:", err);
-      setLoginError("Something went wrong. Try again.");
+    if (role === "admin") {
+      window.location.href = "/dashboard";
+    } else if (role === "user") {
+      window.location.href = "/user_dashboard";
+    } else {
+      setLoginError("Login successful, but role unknown.");
       setErrorKey((prev) => prev + 1);
     }
-  };
+  } catch (err) {
+    console.error("Login failed:", err);
+    setLoginError("Something went wrong. Try again.");
+    setErrorKey((prev) => prev + 1);
+  }
+};
+
 
   const scrollToContact = () =>
     contactRef.current?.scrollIntoView({ behavior: "smooth" });

@@ -3,6 +3,7 @@ import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../api_call"; // ✅ use central API helper
 import "./Dashboard.css";
 
 export default function General() {
@@ -15,10 +16,7 @@ export default function General() {
   const [searchTerm, setSearchTerm] = useState("");
   const rowsPerPage = 8;
 
-  /* =======================
-     DATA MAPPERS
-  ======================= */
-
+  // ----------------- DATA MAPPERS -----------------
   const mapRegulatoryCompliance = (item) => ({
     id: item.regcmp_compliance_id,
     email: item.regcmp_approver_email,
@@ -28,8 +26,6 @@ export default function General() {
     description: item.regcmp_compliance_document,
     startDate: item.regcmp_requested_date,
     actionDate: item.regcmp_completed_date,
-    endDate: "",
-    originalDate: "",
     status: item.regcmp_status,
     approver: item.regcmp_approver_email,
     requestDate: item.regcmp_requested_date,
@@ -45,18 +41,13 @@ export default function General() {
     description: item.slfcmp_compliance_document,
     startDate: item.slfcmp_requested_date,
     actionDate: item.slfcmp_completed_date,
-    endDate: "",
-    originalDate: "",
     status: item.slfcmp_status,
     approver: item.slfcmp_approver_email,
     requestDate: item.slfcmp_requested_date,
     responseDate: item.slfcmp_completed_date,
   });
 
-  /* =======================
-     AUTH + DATA FETCH
-  ======================= */
-
+  // ----------------- AUTH + DATA FETCH -----------------
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -68,20 +59,15 @@ export default function General() {
 
     const fetchData = async () => {
       try {
-        const [regRes, selfRes] = await Promise.all([
-          fetch("http://localhost:5000/regulcompliance/all"),
-          fetch("http://localhost:5000/report/all"),
+        const [regData, selfData] = await Promise.all([
+          apiFetch("/regulcompliance/all"),
+          apiFetch("/report/all"),
         ]);
 
-        const regData = await regRes.json();
-        const selfData = await selfRes.json();
-
-        const mergedData = [
+        setData([
           ...regData.map(mapRegulatoryCompliance),
           ...selfData.map(mapSelfCompliance),
-        ];
-
-        setData(mergedData);
+        ]);
       } catch (error) {
         console.error("Error fetching compliance data:", error);
       }
@@ -90,10 +76,7 @@ export default function General() {
     fetchData();
   }, [navigate]);
 
-  /* =======================
-     SEARCH
-  ======================= */
-
+  // ----------------- SEARCH -----------------
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter((item) =>
@@ -104,10 +87,7 @@ export default function General() {
     );
   }, [data, searchTerm]);
 
-  /* =======================
-     SORTING
-  ======================= */
-
+  // ----------------- SORTING -----------------
   const sortedData = useMemo(() => {
     let sortable = [...filteredData];
     if (sortConfig.key) {
@@ -124,34 +104,22 @@ export default function General() {
 
   const requestSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
+    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
     setSortConfig({ key, direction });
   };
 
   const getSortIcon = (key) => {
     if (sortConfig.key !== key) return <FaSort className="sort-icon" />;
-    return sortConfig.direction === "asc" ? (
-      <FaSortUp className="sort-icon" />
-    ) : (
-      <FaSortDown className="sort-icon" />
-    );
+    return sortConfig.direction === "asc" ? <FaSortUp className="sort-icon" /> : <FaSortDown className="sort-icon" />;
   };
 
-  /* =======================
-     PAGINATION
-  ======================= */
-
+  // ----------------- PAGINATION -----------------
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
 
-  /* =======================
-     EXPORT CSV
-  ======================= */
-
+  // ----------------- EXPORT CSV -----------------
   const exportToCSV = () => {
     if (!sortedData.length) return;
 
@@ -160,12 +128,10 @@ export default function General() {
       "Email",
       "Department",
       "Act",
-      "Name",
+      "Type",
       "Description",
       "Start Date",
       "Action Date",
-      "End Date",
-      "Original Date",
       "Status",
       "Approver",
       "Request Date",
@@ -182,8 +148,6 @@ export default function General() {
         row.description,
         row.startDate,
         row.actionDate,
-        row.endDate,
-        row.originalDate,
         row.status,
         row.approver,
         row.requestDate,
@@ -205,10 +169,7 @@ export default function General() {
     document.body.removeChild(link);
   };
 
-  /* =======================
-     UI
-  ======================= */
-
+  // ----------------- UI -----------------
   return (
     <div className="General">
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
@@ -228,16 +189,10 @@ export default function General() {
 
         <div className="table-actions" style={{ display: "flex", gap: "10px" }}>
           <div className="search-box">
-            <input
-              placeholder="Search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <input placeholder="Search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             <FaSearch className="search-icon" />
           </div>
-          <button className="action-btn primary" onClick={exportToCSV}>
-            Export
-          </button>
+          <button className="action-btn primary" onClick={exportToCSV}>Export</button>
         </div>
       </div>
 

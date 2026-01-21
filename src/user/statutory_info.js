@@ -3,11 +3,12 @@ import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../api_call"; // ✅ centralized API
 import "./Dashboard.css";
 
 export default function ComplianceList() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [data, setData] = useState([]); // ✅ Dynamic backend data
+  const [data, setData] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -16,7 +17,7 @@ export default function ComplianceList() {
 
   const navigate = useNavigate();
 
-  // ✅ Load country + act + fetch data
+  // ---------------- FETCH ----------------
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
     if (!isLoggedIn) {
@@ -29,28 +30,36 @@ export default function ComplianceList() {
 
     if (act) setSelectedAct(act);
     if (country) setSelectedCountry(country);
+    if (!act || !country) return;
 
-    if (act && country) {
-      fetch(
-        `http://localhost:5000/compliance/filter?country=${country}&act=${act}`
-      )
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.records) {
-            const formatted = data.records.map((item) => ({
-              complianceId: "1",
-              act: act,
-              particular: item.cmplst_particular,
-              description: item.cmplst_description,
-            }));
-            setData(formatted);
-          }
-        })
-        .catch((err) => console.error("API error:", err));
-    }
+    const fetchComplianceData = async () => {
+      try {
+        const res = await apiFetch(
+          `/compliance/filter?country=${country}&act=${act}`
+        );
+        if (!Array.isArray(res.records)) return;
+
+        const formatted = res.records.map((r) => ({
+          complianceId: String(r.cmplst_id),
+          act: act,
+          particular: r.cmplst_particular || "",
+          description: r.cmplst_description || "",
+          longDescription: r.cmplst_long_description || "",
+          startDate: r.cmplst_start_date || "",
+          actionDate: r.cmplst_action_date || "",
+          endDate: r.cmplst_end_date || "",
+        }));
+
+        setData(formatted);
+      } catch (err) {
+        console.error("API error:", err);
+      }
+    };
+
+    fetchComplianceData();
   }, [navigate]);
 
-  // ✅ Search
+  // ---------------- SEARCH (UNCHANGED) ----------------
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter(
@@ -62,11 +71,12 @@ export default function ComplianceList() {
     );
   }, [data, searchTerm]);
 
-  // ✅ Sorting logic
+  // ---------------- SORT ----------------
   const requestSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc")
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
       direction = "desc";
+    }
     setSortConfig({ key, direction });
   };
 
@@ -83,23 +93,22 @@ export default function ComplianceList() {
     let sortable = [...filteredData];
     if (sortConfig.key) {
       sortable.sort((a, b) => {
-        const valA = a[sortConfig.key].toLowerCase();
-        const valB = b[sortConfig.key].toLowerCase();
-
-        if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
-        if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+        const A = String(a[sortConfig.key]).toLowerCase();
+        const B = String(b[sortConfig.key]).toLowerCase();
+        if (A < B) return sortConfig.direction === "asc" ? -1 : 1;
+        if (A > B) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
       });
     }
     return sortable;
   }, [filteredData, sortConfig]);
 
-  // ✅ Save clicked row + redirect
+  // ---------------- ADD ----------------
   const handleAddClick = (row) => {
     localStorage.setItem("selectedComplianceRow", JSON.stringify(row));
     navigate("/add_compliance");
   };
-
+  // ---------------- UI ----------------
   return (
     <div className="StatutoryInfo">
       <UserSidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
@@ -107,26 +116,12 @@ export default function ComplianceList() {
 
       <div className="headSection">
         <div className="compliance-score">{selectedAct}</div>
-        <div className="rightGroup">
-          <div className="buttonGroup"></div>
-        </div>
       </div>
 
-      {/* Search & field controls */}
-      <div
-        className="table-header"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
+      {/* SEARCH – SAME STRUCTURE */}
+      <div className="table-header">
         <div></div>
-
-        <div
-          className="table-actions"
-          style={{ display: "flex", alignItems: "center", gap: "10px" }}
-        >
+        <div className="table-actions">
           <div className="search-box">
             <input
               placeholder="Search Compliance..."
@@ -138,7 +133,6 @@ export default function ComplianceList() {
         </div>
       </div>
 
-      {/* TABLE */}
       <table className="data-table">
         <thead>
           <tr>
@@ -151,9 +145,11 @@ export default function ComplianceList() {
             <th onClick={() => requestSort("particular")}>
               Particular {getSortIcon("particular")}
             </th>
-            <th onClick={() => requestSort("description")}>
-              Description {getSortIcon("description")}
-            </th>
+            <th>Description</th>
+            <th>Long Description</th>
+            <th>Start Date</th>
+            <th>Action Date</th>
+            <th>End Date</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -166,8 +162,10 @@ export default function ComplianceList() {
                 <td>{item.act}</td>
                 <td>{item.particular}</td>
                 <td>{item.description}</td>
-
-                {/* ✅ Add button with save functionality */}
+                <td>{item.longDescription}</td>
+                <td>{item.startDate}</td>
+                <td>{item.actionDate}</td>
+                <td>{item.endDate}</td>
                 <td>
                   <button
                     className="action-btn primary"
@@ -180,7 +178,7 @@ export default function ComplianceList() {
             ))
           ) : (
             <tr>
-              <td colSpan="5" style={{ textAlign: "center", padding: "15px" }}>
+              <td colSpan="9" style={{ textAlign: "center", padding: "15px" }}>
                 No records found
               </td>
             </tr>

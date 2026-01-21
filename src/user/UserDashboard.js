@@ -7,6 +7,7 @@ import { FaSearch, FaUsers, FaShieldAlt, FaPen, FaCalendarAlt, FaEdit, FaTrash }
 import { useNavigate } from "react-router-dom";
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
+import { apiFetch } from "../api_call"; // ✅ centralized API import
 import "./Dashboard.css";
 
 const pieTrafficData = [
@@ -39,17 +40,21 @@ export default function Dashboard() {
     if (savedUser) setUser(JSON.parse(savedUser));
   }, []);
 
+  // ---------------- FETCH DASHBOARD SUMMARY ----------------
   useEffect(() => {
-    fetch("http://localhost:5000/dashboard/summary", { method: "GET", credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchSummary = async () => {
+      try {
+        const data = await apiFetch("/dashboard/summary", { method: "GET", credentials: "include" });
         if (data.error) return;
         setTotalDepartments(data.total_departments);
         setTotalCompliances(data.total_compliances);
         setTotalInstances(data.total_actions);
         setEndSubscription(data.subscription_end_date || "");
-      })
-      .catch((err) => console.log("Dashboard API Error:", err));
+      } catch (err) {
+        console.log("Dashboard API Error:", err);
+      }
+    };
+    fetchSummary();
   }, []);
 
   const parseBackendDate = (dateStr) => {
@@ -64,8 +69,7 @@ export default function Dashboard() {
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch("http://localhost:5000/calendar/list", { method: "GET", credentials: "include" });
-      const data = await res.json();
+      const data = await apiFetch("/calendar/list", { method: "GET", credentials: "include" });
       if (Array.isArray(data)) {
         const mappedTasks = data.map((item) => ({
           cal_id: item.cal_id,
@@ -96,25 +100,21 @@ export default function Dashboard() {
     if (!selectedDate || !newTaskText.trim()) return;
 
     try {
-      const res = await fetch("http://localhost:5000/calendar/add", {
+      const data = await apiFetch("/calendar/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ date: selectedDate, event: newTaskText }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        setNewTaskText("");
-        setRefresh(!refresh);
-        setShowModal(false);
-      } else alert(data.error || "Error adding task");
+      setNewTaskText("");
+      setRefresh(!refresh);
+      setShowModal(false);
     } catch {
       alert("Network error while adding task");
     }
   };
 
   const handleDateClick = (info) => {
-    // Use dateStr directly provided by FullCalendar
     setSelectedDate(info.dateStr);
     setShowModal(true);
   };
@@ -122,6 +122,7 @@ export default function Dashboard() {
   const tasksForDate = tasks.filter((t) => t.cal_date === selectedDate);
 
   const truncateTask = (text) => (text.length > 15 ? text.slice(0, 15) + "..." : text);
+
 
   return (
     <div className="Dashboard">

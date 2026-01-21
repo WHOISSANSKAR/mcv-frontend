@@ -3,6 +3,7 @@ import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../api_call"; // centralized API helper
 import "./Dashboard.css";
 
 export default function Upcoming() {
@@ -68,22 +69,15 @@ export default function Upcoming() {
 
     const fetchData = async () => {
       try {
-        const [regRes, selfRes] = await Promise.all([
-          fetch("http://localhost:5000/regulcompliance/upcoming"),
-          fetch("http://localhost:5000/report/upcoming"),
-        ]);
+        const regData = await apiFetch("/regulcompliance/upcoming", "GET");
+        const selfData = await apiFetch("/report/upcoming", "GET");
 
-        const regData = await regRes.json();
-        const selfData = await selfRes.json();
-
-        const mergedData = [
+        setData([
           ...regData.map(mapRegulatoryCompliance),
           ...selfData.map(mapSelfCompliance),
-        ];
-
-        setData(mergedData);
-      } catch (error) {
-        console.error("Error fetching upcoming compliances:", error);
+        ]);
+      } catch (err) {
+        console.error("Error fetching upcoming compliances:", err);
       }
     };
 
@@ -124,19 +118,13 @@ export default function Upcoming() {
 
   const requestSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
+    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
     setSortConfig({ key, direction });
   };
 
   const getSortIcon = (key) => {
     if (sortConfig.key !== key) return <FaSort className="sort-icon" />;
-    return sortConfig.direction === "asc" ? (
-      <FaSortUp className="sort-icon" />
-    ) : (
-      <FaSortDown className="sort-icon" />
-    );
+    return sortConfig.direction === "asc" ? <FaSortUp className="sort-icon" /> : <FaSortDown className="sort-icon" />;
   };
 
   /* =======================
@@ -156,43 +144,22 @@ export default function Upcoming() {
     if (!sortedData.length) return;
 
     const headers = [
-      "Id",
-      "Email",
-      "Department",
-      "Act",
-      "Type",
-      "Description",
-      "Start Date",
-      "Action Date",
-      "Status",
-      "Approver",
-      "Request Date",
-      "Response Date",
+      "Id","Email","Department","Act","Type","Description",
+      "Start Date","Action Date","Status","Approver","Request Date","Response Date"
     ];
 
     const rows = sortedData.map((row) =>
       [
-        row.id,
-        row.email,
-        row.department,
-        row.act,
-        row.name,
-        row.description,
-        row.startDate,
-        row.actionDate,
-        row.status,
-        row.approver,
-        row.requestDate,
-        row.responseDate,
+        row.id,row.email,row.department,row.act,row.name,row.description,
+        row.startDate,row.actionDate,row.status,row.approver,row.requestDate,row.responseDate
       ]
-        .map((v) => `"${v || ""}"`)
-        .join(",")
+      .map(v => `"${v || ""}"`)
+      .join(",")
     );
 
     const csvContent = [headers.join(","), ...rows].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute("download", "upcoming_report.csv");
@@ -224,16 +191,10 @@ export default function Upcoming() {
 
         <div className="table-actions" style={{ display: "flex", gap: "10px" }}>
           <div className="search-box">
-            <input
-              placeholder="Search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <input placeholder="Search" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             <FaSearch className="search-icon" />
           </div>
-          <button className="action-btn primary" onClick={exportToCSV}>
-            Export
-          </button>
+          <button className="action-btn primary" onClick={exportToCSV}>Export</button>
         </div>
       </div>
 
@@ -254,7 +215,6 @@ export default function Upcoming() {
             <th>Response Date</th>
           </tr>
         </thead>
-
         <tbody>
           {currentRows.map((row, idx) => (
             <tr key={idx}>

@@ -4,6 +4,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
+import { apiFetch } from "../api_call"; // ✅ use apiFetch
 
 export default function Compliance() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -25,13 +26,11 @@ export default function Compliance() {
     }
   }, [navigate]);
 
-  // ✅ Fetch ALL compliance data from /list
+  // ✅ Fetch ALL compliance data using apiFetch
   useEffect(() => {
-    fetch("http://localhost:5000/compliance/list", {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchCompliance = async () => {
+      try {
+        const data = await apiFetch("/compliance/list"); // ✅ replaced fetch
         if (data.compliances) {
           const formatted = data.compliances.map((item) => ({
             id: item.cmplst_id || "",
@@ -49,14 +48,17 @@ export default function Compliance() {
             requestDate: item.cmplst_next_day_date || "",
             responseDate: item.cmplst_next_escalation_date || "",
           }));
-
           setData(formatted);
         }
-      })
-      .catch((err) => console.error("Error loading compliances:", err));
+      } catch (err) {
+        console.error("Error loading compliances:", err);
+      }
+    };
+
+    fetchCompliance();
   }, []);
 
-  // ✅ Search across all columns
+  // ✅ Search, sort, pagination, export remain unchanged
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     const lowerTerm = searchTerm.toLowerCase();
@@ -67,7 +69,6 @@ export default function Compliance() {
     );
   }, [data, searchTerm]);
 
-  // ✅ Sorting
   const sortedData = useMemo(() => {
     let sortable = [...filteredData];
     if (sortConfig.key) {
@@ -99,59 +100,27 @@ export default function Compliance() {
     );
   };
 
-  // ✅ Pagination
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
 
-  // ✅ Export CSV (unchanged)
   const exportToCSV = () => {
     if (!sortedData.length) return;
-
     const headers = [
-      "Id",
-      "Email",
-      "Department",
-      "Act",
-      "Name",
-      "Description",
-      "Start Date",
-      "Action Date",
-      "End Date",
-      "Original Date",
-      "Status",
-      "Approver",
-      "Request Date",
-      "Response Date",
+      "Id","Email","Department","Act","Name","Description","Start Date",
+      "Action Date","End Date","Original Date","Status","Approver","Request Date","Response Date"
     ];
-
     const csvRows = [headers.join(",")];
-
     sortedData.forEach((row) => {
       const values = [
-        row.id,
-        row.email,
-        row.department,
-        row.act,
-        row.name,
-        row.description,
-        row.startDate,
-        row.actionDate,
-        row.endDate,
-        row.originalDate,
-        row.status,
-        row.approver,
-        row.requestDate,
-        row.responseDate,
+        row.id,row.email,row.department,row.act,row.name,row.description,
+        row.startDate,row.actionDate,row.endDate,row.originalDate,row.status,
+        row.approver,row.requestDate,row.responseDate
       ].map((val) => `"${val || ""}"`);
-
       csvRows.push(values.join(","));
     });
-
-    const blob = new Blob([csvRows.join("\n")], {
-      type: "text/csv;charset=utf-8;",
-    });
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -168,56 +137,26 @@ export default function Compliance() {
 
       <div className="headSection">
         <div className="compliance-score">Compliance Report</div>
-        <div className="rightGroup">
-          <div className="buttonGroup"></div>
-        </div>
+        <div className="rightGroup"><div className="buttonGroup"></div></div>
       </div>
 
-      {/* Top Filters */}
-      <div
-        className="table-header"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            marginLeft: "45px",
-          }}
-        >
-          <button className="btn blue-btn" onClick={() => navigate("/comprehensive")}>
-            Comprehensive
-          </button>
+      <div className="table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "45px" }}>
+          <button className="btn blue-btn" onClick={() => navigate("/comprehensive")}>Comprehensive</button>
           <button className="btn gray-btn">Compliance</button>
-          <button className="btn blue-btn" onClick={() => navigate("/Approved")}>
-            Approved
-          </button>
-          <button className="btn blue-btn" onClick={() => navigate("/Upcoming")}>
-            Upcoming
-          </button>
+          <button className="btn blue-btn" onClick={() => navigate("/Approved")}>Approved</button>
+          <button className="btn blue-btn" onClick={() => navigate("/Upcoming")}>Upcoming</button>
         </div>
 
         <div className="table-actions" style={{ display: "flex", gap: "10px" }}>
           <div className="search-box">
-            <input
-              placeholder="Search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <input placeholder="Search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             <FaSearch className="search-icon" />
           </div>
-          <button className="action-btn primary" onClick={exportToCSV}>
-            Export
-          </button>
+          <button className="action-btn primary" onClick={exportToCSV}>Export</button>
         </div>
       </div>
 
-      {/* TABLE */}
       <table className="data-table">
         <thead>
           <tr>
@@ -259,23 +198,10 @@ export default function Compliance() {
         </tbody>
       </table>
 
-      {/* Pagination */}
       <div className="pagination">
-        <button
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage((p) => p - 1)}
-        >
-          Prev
-        </button>
-        <span>
-          Page {currentPage} of {totalPages}
-        </span>
-        <button
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage((p) => p + 1)}
-        >
-          Next
-        </button>
+        <button disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>Prev</button>
+        <span>Page {currentPage} of {totalPages}</span>
+        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>Next</button>
       </div>
     </div>
   );

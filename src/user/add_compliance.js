@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
+import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 
 export default function AddSelf() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     regcmp_compliance_id: "",
@@ -27,27 +29,35 @@ export default function AddSelf() {
   const [successMsg, setSuccessMsg] = useState("");
   const [apiError, setApiError] = useState("");
 
-  // Autofill from selected row
+  const toInputDate = (value) => {
+    if (!value) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const d = new Date(value);
+    return isNaN(d) ? "" : d.toISOString().split("T")[0];
+  };
+
   useEffect(() => {
     const savedRow = localStorage.getItem("selectedComplianceRow");
-    if (savedRow) {
-      const row = JSON.parse(savedRow);
-      setFormData((prev) => ({
-        ...prev,
-        regcmp_compliance_id: row.complianceId || "",
-        regcmp_particular: row.particular || "",
-        regcmp_description: row.description || "",
-        regcmp_title: row.particular || "",
-      }));
-    }
+    if (!savedRow) return;
+    const row = JSON.parse(savedRow);
+
+    setFormData((prev) => ({
+      ...prev,
+      regcmp_compliance_id: row.complianceId || "",
+      regcmp_act: row.act || "",
+      regcmp_particular: row.particular || "",
+      regcmp_description: row.description || "",
+      regcmp_long_description: row.longDescription || "",
+      regcmp_title: row.particular || "",
+      regcmp_start_date: toInputDate(row.startDate),
+      regcmp_action_date: toInputDate(row.actionDate),
+      regcmp_end_date: toInputDate(row.endDate),
+    }));
   }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors({});
     setSuccessMsg("");
     setApiError("");
@@ -102,6 +112,7 @@ export default function AddSelf() {
           regcmp_status: "Upcoming",
           regcmp_approvers_email: "",
         });
+        navigate("/statutory_info");
       } else {
         setApiError(data.error || "Something went wrong");
       }
@@ -117,7 +128,6 @@ export default function AddSelf() {
 
       <div className="form-container">
         <h2>Add Regulatory Compliance</h2>
-
         <form onSubmit={handleSubmit} className="add-user-form">
           <label>
             Compliance ID
@@ -130,19 +140,19 @@ export default function AddSelf() {
           </label>
 
           <label>
-            Compliance Particular / Name
+            Compliance Particular / Name *
             <input type="text" name="regcmp_particular" value={formData.regcmp_particular} onChange={handleInputChange} />
             {errors.regcmp_particular && <span className="error">{errors.regcmp_particular}</span>}
           </label>
 
           <label>
             Description
-            <textarea name="regcmp_description" value={formData.regcmp_description} onChange={handleInputChange}></textarea>
+            <input type="text" name="regcmp_description" value={formData.regcmp_description} onChange={handleInputChange} />
           </label>
 
           <label>
             Long Description
-            <textarea name="regcmp_long_description" value={formData.regcmp_long_description} onChange={handleInputChange}></textarea>
+            <input type="text" name="regcmp_long_description" value={formData.regcmp_long_description} onChange={handleInputChange} />
           </label>
 
           <label>
@@ -151,54 +161,45 @@ export default function AddSelf() {
           </label>
 
           <label>
-            Start Date
+            Start Date *
             <input type="date" name="regcmp_start_date" value={formData.regcmp_start_date} onChange={handleInputChange} />
             {errors.regcmp_start_date && <span className="error">{errors.regcmp_start_date}</span>}
           </label>
 
           <label>
-            End Date
+            End Date *
             <input type="date" name="regcmp_end_date" value={formData.regcmp_end_date} onChange={handleInputChange} />
             {errors.regcmp_end_date && <span className="error">{errors.regcmp_end_date}</span>}
           </label>
 
           <label>
-            Action Date
+            Action Date *
             <input type="date" name="regcmp_action_date" value={formData.regcmp_action_date} onChange={handleInputChange} />
             {errors.regcmp_action_date && <span className="error">{errors.regcmp_action_date}</span>}
           </label>
 
           <label>
-            Approvers Email
-            <input
-              type="email"
-              name="regcmp_approvers_email"
-              value={formData.regcmp_approvers_email}
-              onChange={handleInputChange}
-              placeholder="Comma-separated emails"
-            />
+            Approvers Email *
+            <input type="email" name="regcmp_approvers_email" value={formData.regcmp_approvers_email} onChange={handleInputChange} placeholder="Comma-separated emails" />
             {errors.regcmp_approvers_email && <span className="error">{errors.regcmp_approvers_email}</span>}
           </label>
 
           <label>
-            Reminder Days
-            <input type="number" name="regcmp_reminder_days" value={formData.regcmp_reminder_days} onChange={handleInputChange} style={{ width: "60px" }} />
-          </label>
-
-          <label>
             Escalation Email
-            <input
-              type="email"
-              name="regcmp_escalation_email"
-              value={formData.regcmp_escalation_email}
-              onChange={handleInputChange}
-            />
+            <input type="email" name="regcmp_escalation_email" value={formData.regcmp_escalation_email} onChange={handleInputChange} />
           </label>
 
-          <label>
-            Escalation Reminder Days
-            <input type="number" name="regcmp_escalation_reminder_days" value={formData.regcmp_escalation_reminder_days} onChange={handleInputChange} style={{ width: "60px" }} />
-          </label>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <label style={{ flex: 1 }}>
+              Reminder Days
+              <input type="number" name="regcmp_reminder_days" value={formData.regcmp_reminder_days} onChange={handleInputChange} style={{ width: "60px" }} />
+            </label>
+
+            <label style={{ flex: 1 }}>
+              Escalation Reminder Days
+              <input type="number" name="regcmp_escalation_reminder_days" value={formData.regcmp_escalation_reminder_days} onChange={handleInputChange} style={{ width: "60px" }} />
+            </label>
+          </div>
 
           {successMsg && <span className="success-msg">{successMsg}</span>}
           {apiError && <span className="error">{apiError}</span>}

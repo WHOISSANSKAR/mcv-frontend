@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { FaSearch, FaPlusCircle, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../api_call"; // centralized API
 import "./Dashboard.css";
 
 export default function General() {
@@ -14,10 +15,6 @@ export default function General() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const rowsPerPage = 8;
-
-  /* =======================
-     DATA MAPPERS (SAME AS ADMIN)
-  ======================= */
 
   const mapRegulatoryCompliance = (item) => ({
     id: item.regcmp_compliance_id,
@@ -53,10 +50,6 @@ export default function General() {
     responseDate: item.slfcmp_completed_date,
   });
 
-  /* =======================
-     AUTH + FETCH
-  ======================= */
-
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
     if (!isLoggedIn) {
@@ -66,13 +59,10 @@ export default function General() {
 
     const fetchData = async () => {
       try {
-        const [regRes, selfRes] = await Promise.all([
-          fetch("http://localhost:5000/regulcompliance/all"),
-          fetch("http://localhost:5000/report/all"),
+        const [regData, selfData] = await Promise.all([
+          apiFetch("/regulcompliance/all"),
+          apiFetch("/report/all"),
         ]);
-
-        const regData = await regRes.json();
-        const selfData = await selfRes.json();
 
         const merged = [
           ...regData.map(mapRegulatoryCompliance),
@@ -88,10 +78,6 @@ export default function General() {
     fetchData();
   }, [navigate]);
 
-  /* =======================
-     SEARCH (UNCHANGED)
-  ======================= */
-
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter(
@@ -100,10 +86,6 @@ export default function General() {
         item.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [data, searchTerm]);
-
-  /* =======================
-     SORTING (UNCHANGED)
-  ======================= */
 
   const sortedData = useMemo(() => {
     let sortable = [...filteredData];
@@ -121,27 +103,24 @@ export default function General() {
 
   const requestSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
+    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
     setSortConfig({ key, direction });
   };
 
   const getSortIcon = (key) => {
     if (sortConfig.key !== key) return <FaSort className="sort-icon" />;
-    return sortConfig.direction === "asc"
-      ? <FaSortUp className="sort-icon" />
-      : <FaSortDown className="sort-icon" />;
+    return sortConfig.direction === "asc" ? (
+      <FaSortUp className="sort-icon" />
+    ) : (
+      <FaSortDown className="sort-icon" />
+    );
   };
-
-  /* =======================
-     PAGINATION (UNCHANGED)
-  ======================= */
 
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
+
 
   /* =======================
      UI (UNCHANGED)

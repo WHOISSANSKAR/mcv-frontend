@@ -4,6 +4,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
+import { apiFetch } from "../api_call"; // ✅ use apiFetch
 
 export default function Approved() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -14,10 +15,6 @@ export default function Approved() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const rowsPerPage = 8;
-
-  /* =======================
-     DATA MAPPERS
-  ======================= */
 
   const mapRegulatoryCompliance = (item) => ({
     id: item.regcmp_compliance_id,
@@ -53,10 +50,6 @@ export default function Approved() {
     responseDate: item.slfcmp_completed_date,
   });
 
-  /* =======================
-     AUTH + FETCH APPROVED
-  ======================= */
-
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -68,13 +61,11 @@ export default function Approved() {
 
     const fetchApproved = async () => {
       try {
-        const [regRes, selfRes] = await Promise.all([
-          fetch("http://localhost:5000/regulcompliance/approved"),
-          fetch("http://localhost:5000/report/approved"),
+        // ✅ replace fetch with apiFetch
+        const [regData, selfData] = await Promise.all([
+          apiFetch("/regulcompliance/approved"),
+          apiFetch("/report/approved"),
         ]);
-
-        const regData = await regRes.json();
-        const selfData = await selfRes.json();
 
         const merged = [
           ...regData.map(mapRegulatoryCompliance),
@@ -90,10 +81,6 @@ export default function Approved() {
     fetchApproved();
   }, [navigate]);
 
-  /* =======================
-     SEARCH
-  ======================= */
-
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter((item) =>
@@ -103,10 +90,6 @@ export default function Approved() {
         .includes(searchTerm.toLowerCase())
     );
   }, [data, searchTerm]);
-
-  /* =======================
-     SORTING
-  ======================= */
 
   const sortedData = useMemo(() => {
     let sortable = [...filteredData];
@@ -139,18 +122,10 @@ export default function Approved() {
     );
   };
 
-  /* =======================
-     PAGINATION
-  ======================= */
-
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
-
-  /* =======================
-     EXPORT CSV
-  ======================= */
 
   const exportToCSV = () => {
     if (!sortedData.length) return;
@@ -200,10 +175,6 @@ export default function Approved() {
     link.click();
     document.body.removeChild(link);
   };
-
-  /* =======================
-     UI
-  ======================= */
 
   return (
     <div className="Approved">

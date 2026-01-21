@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../api_call"; // ✅ works for pages in src/admin or src/user
 import "./Dashboard.css";
 
 export default function AddUser() {
   const [menuOpen, setMenuOpen] = useState(false);
+
   const [formData, setFormData] = useState({
     company: "",
     username: "",
@@ -23,7 +25,6 @@ export default function AddUser() {
   const [popup, setPopup] = useState({ visible: false, type: "", value: "" });
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState("");
-
   const [errorVisible, setErrorVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
 
@@ -40,7 +41,7 @@ export default function AddUser() {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       const parsed = JSON.parse(storedUser);
-      if (parsed && parsed.usrlst_id && !isNaN(parsed.usrlst_id)) {
+      if (parsed?.usrlst_id) {
         user = parsed;
         userId = parsed.usrlst_id;
       }
@@ -62,11 +63,13 @@ export default function AddUser() {
     }
   }, [navigate, userId, user]);
 
+  // Restore saved form
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("addUserForm") || "{}");
     setFormData((prev) => ({ ...prev, ...saved }));
   }, []);
 
+  // Auto-save form
   useEffect(() => {
     const fieldsToSave = ["company", "username", "email", "contact", "escalationEmail"];
     const toStore = {};
@@ -76,70 +79,57 @@ export default function AddUser() {
     localStorage.setItem("addUserForm", JSON.stringify(toStore));
   }, [formData]);
 
+  // Clear storage on unload
   useEffect(() => {
     const clearStorage = () => localStorage.removeItem("addUserForm");
     window.addEventListener("beforeunload", clearStorage);
     return () => window.removeEventListener("beforeunload", clearStorage);
   }, []);
 
- useEffect(() => {
-  if (!userId) return;
+  // Fetch Business Units
+  useEffect(() => {
+    if (!userId) return;
 
-  fetch(`http://localhost:5000/user/business_unit/all?user_id=${userId}`)
-    .then((res) => res.json())
-    .then((data) => {
-      if (Array.isArray(data)) {
-        setBusinessUnits(data);
-        setFilteredBusinessUnits(data);
+    async function getBusinessUnits() {
+      try {
+        const data = await apiFetch(`/user/business_unit/all?user_id=${userId}`);
+        if (Array.isArray(data)) {
+          setBusinessUnits(data);
+          setFilteredBusinessUnits(data);
 
-        const fromAddBU = localStorage.getItem("fromAddBU");
-        const fromAddDept = localStorage.getItem("fromAddDept");
+          const fromAddBU = localStorage.getItem("fromAddBU");
+          const fromAddDept = localStorage.getItem("fromAddDept");
 
-        // ✅ ONLY if user just returned from add BU or add dept
-        if ((fromAddBU || fromAddDept) && data.length > 0) {
+          if ((fromAddBU || fromAddDept) && data.length > 0) {
+            ["fromAddBU", "fromAddDept", "customBU", "customDept", "selectedBusinessUnitId"].forEach(
+              (key) => localStorage.removeItem(key)
+            );
 
-          // ✅ REMOVE ALL TEMP STORAGE IMMEDIATELY
-          localStorage.removeItem("fromAddBU");
-          localStorage.removeItem("fromAddDept");
-          localStorage.removeItem("customBU");
-          localStorage.removeItem("customDept");
-          localStorage.removeItem("selectedBusinessUnitId");
+            const latestBU = data[0];
 
-          // ✅ Auto-select the latest BU
-          const latestBU = data[0];
+            setFormData((prev) => ({
+              ...prev,
+              businessUnit: latestBU.business_unit_name,
+              businessUnitId: latestBU.usrbu_id,
+            }));
 
-          setFormData((prev) => ({
-            ...prev,
-            businessUnit: latestBU.business_unit_name,
-            businessUnitId: latestBU.usrbu_id,
-          }));
-
-          // ✅ Also fetch departments and auto-select latest dept if needed
-          fetchDepartments(latestBU.business_unit_name, fromAddDept);
+            // Also fetch departments
+            fetchDepartments(latestBU.business_unit_name, fromAddDept);
+          }
         }
+      } catch (err) {
+        console.error("Error fetching business units:", err);
       }
-    })
-    .catch((err) => console.error("Error fetching business units:", err));
-}, [userId]);
+    }
 
+    getBusinessUnits();
+  }, [userId]);
 
- const fetchDepartments = (buName, autoSelectDept = false) => {
-  if (!buName) return;
+  const fetchDepartments = async (buName, autoSelectDept = false) => {
+    if (!buName) return;
 
-  fetch("http://localhost:5000/user/departments/all", {
-    method: "GET",
-    credentials: "include", // ✅ very important: allows Flask session cookies
-  })
-    .then(async (res) => {
-      const data = await res.json();
-
-      if (!res.ok) {
-        console.error("Error fetching departments:", data.error || data.message);
-        setDepartments([]);
-        setFilteredDepartments([]);
-        return;
-      }
-
+    try {
+      const data = await apiFetch("/user/departments/all");
       if (Array.isArray(data)) {
         const filtered = data
           .filter((d) => d.usrbu_business_unit_name === buName)
@@ -160,10 +150,12 @@ export default function AddUser() {
         setDepartments([]);
         setFilteredDepartments([]);
       }
-    })
-    .catch((err) => console.error("Error fetching departments:", err));
-};
-
+    } catch (err) {
+      console.error("Error fetching departments:", err);
+      setDepartments([]);
+      setFilteredDepartments([]);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -223,7 +215,7 @@ export default function AddUser() {
   };
 
   const handleCustomCheck = (name) => {
-    const value = formData[name]?.trim?.();
+    const value = formData[name]?.trim();
     if (!value) return;
     if (name === "businessUnit") {
       const exists = businessUnits.some(
@@ -242,23 +234,20 @@ export default function AddUser() {
     }
   };
 
- const handlePopupYes = () => {
-  if (popup.type === "businessUnit") {
-    localStorage.setItem("customBU", popup.value);
-    localStorage.setItem("fromAddBU", "true");
-    localStorage.setItem("page", "2");   // ✅ already present
-    
-  localStorage.setItem("BUpage", "2");   // ✅ NEW LINE
-    navigate("/add-bu");
-
-  } else if (popup.type === "department") {
-    localStorage.setItem("customDept", popup.value);
-    localStorage.setItem("fromAddDept", "true");
-    localStorage.setItem("page", "2");   // ✅ NEW: added for dept also
-    navigate(`/add-department?businessUnitId=${formData.businessUnitId}`);
-  }
-};
-
+  const handlePopupYes = () => {
+    if (popup.type === "businessUnit") {
+      localStorage.setItem("customBU", popup.value);
+      localStorage.setItem("fromAddBU", "true");
+      localStorage.setItem("page", "2");
+      localStorage.setItem("BUpage", "2");
+      navigate("/add-bu");
+    } else if (popup.type === "department") {
+      localStorage.setItem("customDept", popup.value);
+      localStorage.setItem("fromAddDept", "true");
+      localStorage.setItem("page", "2");
+      navigate(`/add-department?businessUnitId=${formData.businessUnitId}`);
+    }
+  };
 
   const handlePopupNo = () => {
     if (popup.type === "businessUnit")
@@ -278,70 +267,61 @@ export default function AddUser() {
     }
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  setSuccessMsg("");
-  setErrors({});
-  setPopup({ visible: false, type: "", value: "" });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSuccessMsg("");
+    setErrors({});
+    setPopup({ visible: false, type: "", value: "" });
 
-  const trimmedData = {};
-  Object.keys(formData).forEach((key) => {
-    const value = formData[key];
-    trimmedData[key] = value != null && typeof value === "string" ? value.trim() : value;
-  });
-
-  const requiredFields = [
-    "company",
-    "username",
-    "email",
-    "contact",
-    "businessUnit",
-    "department",
-    "escalationEmail",
-  ];
-  for (const field of requiredFields) {
-    if (!trimmedData[field] || trimmedData[field].length === 0) {
-      setErrors({ api: "All fields are required and cannot be blank or contain only spaces." });
-      return;
-    }
-  }
-
-  if (trimmedData.contact.length !== 10) {
-    setErrors({ api: "Contact number must be exactly 10 digits." });
-    return;
-  }
-
-  localStorage.removeItem("addUserForm");
-
-  try {
-    const payload = {
-      user_id: Number(userId),
-      name: trimmedData.username,
-      email: trimmedData.email,
-      contact: trimmedData.contact,
-      role: "user",
-      department: trimmedData.department,
-      business_unit: trimmedData.businessUnit,
-      escalation_mail: trimmedData.escalationEmail,
-      company_name: trimmedData.company,
-    };
-
-    const token = localStorage.getItem("token"); // ✅ JWT token from login
-
-    const response = await fetch("http://localhost:5000/user/add", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`, // ✅ Added Authorization header
-      },
-      body: JSON.stringify(payload),
+    // Trim data
+    const trimmedData = {};
+    Object.keys(formData).forEach((key) => {
+      const value = formData[key];
+      trimmedData[key] = value != null && typeof value === "string" ? value.trim() : value;
     });
 
-    const data = await response.json();
+    // Validation
+    const requiredFields = [
+      "company",
+      "username",
+      "email",
+      "contact",
+      "businessUnit",
+      "department",
+      "escalationEmail",
+    ];
+    for (const field of requiredFields) {
+      if (!trimmedData[field]) {
+        setErrors({ api: "All fields are required and cannot be blank or spaces." });
+        return;
+      }
+    }
 
-    if (!response.ok) {
-      setErrors({ api: data.error || "Failed to add user" });
-    } else {
+    if (trimmedData.contact.length !== 10) {
+      setErrors({ api: "Contact number must be exactly 10 digits." });
+      return;
+    }
+
+    localStorage.removeItem("addUserForm");
+
+    try {
+      const payload = {
+        user_id: Number(userId),
+        name: trimmedData.username,
+        email: trimmedData.email,
+        contact: trimmedData.contact,
+        role: "user",
+        department: trimmedData.department,
+        business_unit: trimmedData.businessUnit,
+        escalation_mail: trimmedData.escalationEmail,
+        company_name: trimmedData.company,
+      };
+
+      await apiFetch("/user/add", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
       setSuccessMsg("✅ User added successfully!");
       setFormData({
         company: "",
@@ -354,14 +334,13 @@ export default function AddUser() {
         businessUnit: "",
         businessUnitId: "",
       });
+    } catch (err) {
+      console.error("Error adding user:", err);
+      setErrors({ api: err.message || "Failed to add user. Please try again." });
     }
-  } catch (err) {
-    console.error("Error adding user:", err);
-    setErrors({ api: "Failed to add user. Please try again." });
-  }
-};
+  };
 
-
+  // Auto-hide messages
   useEffect(() => {
     if (errors.api) {
       setErrorVisible(true);
@@ -394,84 +373,48 @@ export default function AddUser() {
         <h2>Add User</h2>
 
         <div className="messages-top" style={{ margin: "0 auto 1rem auto", width: "50%" }}>
-          {errors.api && (
-            <div className={`login-error ${!errorVisible ? "fade-out" : ""}`}>
-              {errors.api}
-            </div>
-          )}
-          {successMsg && (
-            <div className={`success-msg ${!successVisible ? "fade-out" : ""}`}>
-              {successMsg}
-            </div>
-          )}
+          {errors.api && <div className={`login-error ${!errorVisible ? "fade-out" : ""}`}>{errors.api}</div>}
+          {successMsg && <div className={`success-msg ${!successVisible ? "fade-out" : ""}`}>{successMsg}</div>}
         </div>
 
         <form onSubmit={handleSubmit} className="add-user-form">
           <label>
             Company Name
-            <input
-              type="text"
-              name="company"
-              value={formData.company}
-              onChange={handleInputChange}
-            />
+            <input type="text" name="company" value={formData.company} onChange={handleInputChange} />
           </label>
 
           <label>
             User Name
-            <input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleInputChange}
-            />
+            <input type="text" name="username" value={formData.username} onChange={handleInputChange} />
           </label>
 
           <label>
             E-Mail Address
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-            />
+            <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
           </label>
 
-         <label>
-  Contact Number
-  <input
-    type="text"
-    name="contact"
-    value={formData.contact}
-    onChange={(e) => {
-      const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 10);
+          <label>
+            Contact Number
+            <input
+              type="text"
+              name="contact"
+              value={formData.contact}
+              onChange={(e) => {
+                const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                setFormData((prev) => ({ ...prev, contact: onlyDigits }));
+                if (onlyDigits.length === 10) setErrors((prev) => ({ ...prev, contact: "" }));
+              }}
+              onBlur={() => {
+                if (formData.contact.length > 0 && formData.contact.length < 10) {
+                  setErrors((prev) => ({ ...prev, contact: "Contact number must be exactly 10 digits." }));
+                }
+              }}
+              maxLength={10}
+            />
+            {errors.contact && <p style={{ color: "red", fontSize: "14px" }}>{errors.contact}</p>}
+          </label>
 
-      // Update field
-      setFormData((prev) => ({ ...prev, contact: onlyDigits }));
-
-      // ✅ Auto-remove error when corrected to 10 digits
-      if (onlyDigits.length === 10) {
-        setErrors((prev) => ({ ...prev, contact: "" }));
-      }
-    }}
-    onBlur={() => {
-      // ✅ Only show error on blur if incomplete
-      if (formData.contact.length > 0 && formData.contact.length < 10) {
-        setErrors((prev) => ({
-          ...prev,
-          contact: "Contact number must be exactly 10 digits.",
-        }));
-      }
-    }}
-    maxLength={10}
-  />
-
-  {errors.contact && (
-    <p style={{ color: "red", fontSize: "14px" }}>{errors.contact}</p>
-  )}
-</label>
-
-
+          {/* Business Unit */}
           <label className="autocomplete">
             Business Unit
             <input
@@ -490,12 +433,7 @@ export default function AddUser() {
               <ul className="suggestions">
                 {filteredBusinessUnits.length > 0 ? (
                   filteredBusinessUnits.map((unit) => (
-                    <li
-                      key={unit.usrbu_id}
-                      onMouseDown={() =>
-                        handleSuggestionClick("businessUnit", unit)
-                      }
-                    >
+                    <li key={unit.usrbu_id} onMouseDown={() => handleSuggestionClick("businessUnit", unit)}>
                       {unit.business_unit_name}
                     </li>
                   ))
@@ -506,6 +444,7 @@ export default function AddUser() {
             )}
           </label>
 
+          {/* Department */}
           <label className="autocomplete">
             Department
             <input
@@ -526,12 +465,7 @@ export default function AddUser() {
               <ul className="suggestions">
                 {filteredDepartments.length > 0 ? (
                   filteredDepartments.map((dept) => (
-                    <li
-                      key={dept.usrdept_id}
-                      onMouseDown={() =>
-                        handleSuggestionClick("department", dept)
-                      }
-                    >
+                    <li key={dept.usrdept_id} onMouseDown={() => handleSuggestionClick("department", dept)}>
                       {dept.usrdept_department_name}
                     </li>
                   ))
@@ -548,12 +482,7 @@ export default function AddUser() {
 
           <label>
             Escalation Email
-            <input
-              type="email"
-              name="escalationEmail"
-              value={formData.escalationEmail}
-              onChange={handleInputChange}
-            />
+            <input type="email" name="escalationEmail" value={formData.escalationEmail} onChange={handleInputChange} />
           </label>
 
           <button type="submit" className="submit-btn">
@@ -561,20 +490,16 @@ export default function AddUser() {
           </button>
         </form>
 
+        {/* Popup */}
         {popup.visible && (
           <div className="popup-overlay">
             <div className="popup">
               <p>
-                Do you want to add "{popup.value}" as a new{" "}
-                {popup.type === "businessUnit" ? "Business Unit" : "Department"}?
+                Do you want to add "{popup.value}" as a new {popup.type === "businessUnit" ? "Business Unit" : "Department"}?
               </p>
               <div className="popup-buttons">
-                <button className="popup-yes" onClick={handlePopupYes}>
-                  Yes
-                </button>
-                <button className="popup-no" onClick={handlePopupNo}>
-                  No
-                </button>
+                <button className="popup-yes" onClick={handlePopupYes}>Yes</button>
+                <button className="popup-no" onClick={handlePopupNo}>No</button>
               </div>
             </div>
           </div>

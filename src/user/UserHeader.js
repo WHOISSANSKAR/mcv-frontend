@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaBars, FaUser } from "react-icons/fa";
+import { apiFetch } from "../api_call"; // ✅ import centralized API
 
 export default function UserHeader({ menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
@@ -8,13 +9,13 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const dropdownRef = useRef(null);
 
-  // ✅ Check if logged-in user is admin
+  // ---------------- CHECK ADMIN ROLE ----------------
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser);
-        if (userData.usrlst_role?.toLowerCase() === "admin") {
+        if (userData?.usrlst_role?.toLowerCase() === "admin") {
           setIsAdmin(true);
         }
       } catch (err) {
@@ -23,13 +24,43 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
     }
   }, []);
 
-  // ✅ Close dropdown when clicking outside
+  // ---------------- LOGOUT ----------------
+  const handleLogout = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      // ✅ Using centralized apiFetch
+      await apiFetch("/login/logout", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: user?.usrlst_email,
+          department_id: user?.usrlst_department_id,
+        }),
+      });
+    } catch (err) {
+      console.error("Logout API Error:", err);
+    }
+
+    // ✅ Clear frontend session
+    localStorage.removeItem("user");
+    localStorage.removeItem("isLoggedIn");
+
+    // ✅ Redirect to login
+    navigate("/login");
+  };
+
+  // ---------------- CLOSE DROPDOWN ON OUTSIDE CLICK ----------------
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
     }
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -78,7 +109,6 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
               minWidth: "140px",
             }}
           >
-
             {/* ✅ Admin Button */}
             {isAdmin && (
               <button
@@ -98,7 +128,7 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
               </button>
             )}
 
-            {/* ✅ Updated Logout Logic */}
+            {/* ✅ Logout */}
             <button
               style={{
                 display: "block",
@@ -110,29 +140,10 @@ export default function UserHeader({ menuOpen, setMenuOpen }) {
                 cursor: "pointer",
                 fontSize: "14px",
               }}
-              onClick={async () => {
-                // ✅ NEW: Backend logout API
-                try {
-                  await fetch("http://localhost:5000/login/logout", {
-                    method: "POST",
-                    credentials: "include",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                  });
-                } catch (err) {
-                  console.error("Logout API Error:", err);
-                }
-
-                // ✅ OLD LOGIC (same as before)
-                localStorage.removeItem("isLoggedIn");
-                localStorage.removeItem("user");
-                window.location.reload();
-              }}
+              onClick={handleLogout}
             >
               Logout
             </button>
-
           </div>
         )}
       </div>

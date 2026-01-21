@@ -1,43 +1,43 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaBars, FaUser } from "react-icons/fa";
+import { apiFetch } from "../api_call"; // ✅ centralized API helper
 
 export default function Header({ menuOpen, setMenuOpen }) {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // ✅ BACKEND LOGOUT API
+  // ---------------- LOGOUT ----------------
   const handleLogout = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:5000/login/logout", {
-        method: "POST",
-        credentials: "include", // ✅ important for Flask session
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      // Use centralized apiFetch for consistency
+      await apiFetch("/login/logout", "POST", {
+        email: user?.usrlst_email,
+        department_id: user?.usrlst_department_id,
       });
-
-      const data = await res.json();
-      console.log("Logout:", data);
-
-      // ✅ Clear frontend session
-      localStorage.removeItem("user");
-
-      // ✅ Redirect to login
-      navigate("/login");
     } catch (error) {
       console.error("Logout API Error:", error);
     }
+
+    // ✅ Clear frontend session
+    localStorage.removeItem("user");
+    localStorage.removeItem("isLoggedIn");
+
+    // ✅ Redirect to login
+    navigate("/login");
   };
 
-  // Close dropdown when clicking outside
+  // ---------------- CLOSE DROPDOWN ON OUTSIDE CLICK ----------------
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
     }
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -45,7 +45,10 @@ export default function Header({ menuOpen, setMenuOpen }) {
   return (
     <header className="header">
       <div className="header-left">
-        <FaBars className="hamburger-icon" onClick={() => setMenuOpen(!menuOpen)} />
+        <FaBars
+          className="hamburger-icon"
+          onClick={() => setMenuOpen(!menuOpen)}
+        />
 
         <div
           className="logo"
@@ -56,7 +59,11 @@ export default function Header({ menuOpen, setMenuOpen }) {
         </div>
       </div>
 
-      <div className="header-actions" style={{ position: "relative" }} ref={dropdownRef}>
+      <div
+        className="header-actions"
+        style={{ position: "relative" }}
+        ref={dropdownRef}
+      >
         <button
           className="btn user-primary"
           onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -79,40 +86,21 @@ export default function Header({ menuOpen, setMenuOpen }) {
               minWidth: "120px",
             }}
           >
-           <button
-  style={{
-    display: "block",
-    width: "100%",
-    padding: "8px 12px",
-    border: "none",
-    background: "none",
-    textAlign: "left",
-    cursor: "pointer",
-    fontSize: "14px",
-  }}
-  onClick={async () => {
-    // ✅ NEW: backend logout call
-    try {
-      await await fetch("http://localhost:5000/login/logout", {
-
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-    } catch (e) {
-      console.error("Logout API Error:", e);
-    }
-
-    // ✅ OLD LOGIC (unchanged exactly as you had it)
-    localStorage.removeItem("isLoggedIn");
-    window.location.reload();
-  }}
->
-  Logout
-</button>
-
+            <button
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "8px 12px",
+                border: "none",
+                background: "none",
+                textAlign: "left",
+                cursor: "pointer",
+                fontSize: "14px",
+              }}
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
           </div>
         )}
       </div>

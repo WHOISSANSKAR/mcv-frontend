@@ -3,6 +3,7 @@ import { FaSearch, FaPlusCircle, FaSort, FaSortUp, FaSortDown } from "react-icon
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../api_call"; // centralized API helper
 import "./Dashboard.css";
 
 export default function User() {
@@ -16,45 +17,40 @@ export default function User() {
   const rowsPerPage = 8;
   const navigate = useNavigate();
 
-  // ✅ Check admin access and fetch data
- useEffect(() => {
-  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  if (!isLoggedIn || user.usrlst_role?.toLowerCase() !== "admin") {
-    navigate("/", { replace: true });
-    return;
-  }
+  /* =======================
+     AUTH + FETCH USERS
+  ======================= */
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  async function fetchUsers() {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token"); // ✅ get JWT
-      const response = await fetch("http://localhost:5000/user/list", {
-        headers: {
-          "Authorization": `Bearer ${token}`, // ✅ send JWT
-        },
-      });
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const users = await response.json();
-      setData(users); // ✅ admins already excluded by backend
-      setLoading(false);
-    } catch (err) {
-      console.error("Failed to fetch users:", err);
-      setError("Failed to fetch users from server.");
-      setLoading(false);
+    if (!isLoggedIn || user.usrlst_role?.toLowerCase() !== "admin") {
+      navigate("/", { replace: true });
+      return;
     }
-  }
 
-  fetchUsers();
-}, [navigate]);
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const users = await apiFetch("/user/list", "GET");
+        setData(users);
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
+        setError("Failed to fetch users from server.");
+        setLoading(false);
+      }
+    };
 
+    fetchUsers();
+  }, [navigate]);
 
-  // ✅ GLOBAL SEARCH ACROSS ALL COLUMNS
+  /* =======================
+     SEARCH
+  ======================= */
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
-
     const lower = searchTerm.toLowerCase();
-
     return data.filter(item =>
       Object.values(item).some(val =>
         (val || "").toString().toLowerCase().includes(lower)
@@ -62,7 +58,9 @@ export default function User() {
     );
   }, [data, searchTerm]);
 
-  // ✅ Sorting
+  /* =======================
+     SORTING
+  ======================= */
   const sortedData = useMemo(() => {
     let sortable = [...filteredData];
     if (sortConfig.key) {
@@ -85,46 +83,35 @@ export default function User() {
 
   const getSortIcon = key => {
     if (sortConfig.key !== key) return <FaSort className="sort-icon" />;
-    return sortConfig.direction === "asc" ? (
-      <FaSortUp className="sort-icon" />
-    ) : (
-      <FaSortDown className="sort-icon" />
-    );
+    return sortConfig.direction === "asc" ? <FaSortUp className="sort-icon" /> : <FaSortDown className="sort-icon" />;
   };
 
-  // ✅ Export to CSV (entire table)
+  /* =======================
+     PAGINATION
+  ======================= */
+  const indexOfLastRow = currentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.ceil(sortedData.length / rowsPerPage);
+
+  /* =======================
+     EXPORT CSV
+  ======================= */
   const exportToCSV = () => {
     if (!sortedData || sortedData.length === 0) return;
 
-    const csvRows = [];
     const headers = [
-      "Name",
-      "E-mail",
-      "Contact",
-      "Company",
-      "Business Unit",
-      "Department",
-      "Escalation E-mail"
+      "Name","E-mail","Contact","Company","Business Unit","Department","Escalation E-mail"
     ];
-    csvRows.push(headers.join(","));
+    const rows = sortedData.map(row =>
+      [
+        row.name,row.email,row.contact,row.company_name,row.business_unit,row.department,row.escalation_mail
+      ].map(val => `"${val || ""}"`).join(",")
+    );
 
-    sortedData.forEach(row => {
-      const values = [
-        row.name,
-        row.email,
-        row.contact,
-        row.company_name,
-        row.business_unit,
-        row.department,
-        row.escalation_mail
-      ].map(val => `"${val || ""}"`);
-      csvRows.push(values.join(","));
-    });
-
-    const csvContent = csvRows.join("\n");
+    const csvContent = [headers.join(","), ...rows].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute("download", "users.csv");
@@ -133,12 +120,9 @@ export default function User() {
     document.body.removeChild(link);
   };
 
-  // ✅ Pagination
-  const indexOfLastRow = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
-  const totalPages = Math.ceil(sortedData.length / rowsPerPage);
-
+  /* =======================
+     UI
+  ======================= */
   return (
     <div className="user">
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
@@ -147,16 +131,13 @@ export default function User() {
       <div className="headSection">
         <div className="compliance-score">Departmental Users</div>
         <div className="rightGroup">
-          <div className="buttonGroup">
-           <button
-  className="headBtn"
-  style={{ backgroundColor: "#fff", color: "black" }}
-  onClick={() => navigate("/user_dashboard")}
->
-  <FaPlusCircle className="btnIcon" /> Compliance Zone
-</button>
-
-          </div>
+          <button
+            className="headBtn"
+            style={{ backgroundColor: "#fff", color: "black" }}
+            onClick={() => navigate("/user_dashboard")}
+          >
+            <FaPlusCircle className="btnIcon" /> Compliance Zone
+          </button>
         </div>
       </div>
 
@@ -170,20 +151,11 @@ export default function User() {
 
         <div className="table-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div className="search-box">
-            <input
-              placeholder="Search"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
+            <input placeholder="Search" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             <FaSearch className="search-icon" />
           </div>
-
-          <button className="action-btn primary" onClick={() => navigate("/add-user")}>
-            + Add User
-          </button>
-          <button className="action-btn primary" onClick={exportToCSV}>
-            Export
-          </button>
+          <button className="action-btn primary" onClick={() => navigate("/add-user")}>+ Add User</button>
+          <button className="action-btn primary" onClick={exportToCSV}>Export</button>
         </div>
       </div>
 
@@ -206,30 +178,26 @@ export default function User() {
                 <th>Action</th>
               </tr>
             </thead>
-
             <tbody>
-              {currentRows.map((row, index) => (
-                <tr key={index}>
-                  <td><span className="label">Name</span><span className="value">{row.name}</span></td>
-                  <td><span className="label">E-mail</span><span className="value">{row.email}</span></td>
-                  <td><span className="label">Contact</span><span className="value">{row.contact}</span></td>
-                  <td><span className="label">Company</span><span className="value">{row.company_name}</span></td>
-                  <td><span className="label">Business Unit</span><span className="value">{row.business_unit}</span></td>
-                  <td><span className="label">Department</span><span className="value">{row.department}</span></td>
-                  <td><span className="label">Escalation E-mail</span><span className="value">{row.escalation_mail}</span></td>
+              {currentRows.map((row, idx) => (
+                <tr key={idx}>
+                  <td>{row.name}</td>
+                  <td>{row.email}</td>
+                  <td>{row.contact}</td>
+                  <td>{row.company_name}</td>
+                  <td>{row.business_unit}</td>
+                  <td>{row.department}</td>
+                  <td>{row.escalation_mail}</td>
                   <td>
-                    <span className="label">Action</span>
-                    <span className="value">
-                      <button
-                        className="edit-btn"
-                        onClick={() => {
-                          localStorage.setItem("editUserData", JSON.stringify(row));
-                          navigate("/edit-user");
-                        }}
-                      >
-                        Edit
-                      </button>
-                    </span>
+                    <button
+                      className="edit-btn"
+                      onClick={() => {
+                        localStorage.setItem("editUserData", JSON.stringify(row));
+                        navigate("/edit-user");
+                      }}
+                    >
+                      Edit
+                    </button>
                   </td>
                 </tr>
               ))}

@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { FaSearch, FaPlusCircle, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
+import { api_call } from "./api_call"; // <--- import your api_call.js
 
 export default function General() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -16,25 +17,20 @@ export default function General() {
   const rowsPerPage = 8;
 
   /* =======================
-     AUTH CHECK (UNCHANGED)
+     AUTH CHECK
   ======================= */
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    if (!isLoggedIn) {
-      navigate("/", { replace: true });
-    }
+    if (!isLoggedIn) navigate("/", { replace: true });
   }, [navigate]);
 
   /* =======================
-     FETCH + MAP DATA
-     (SAME AS ADMIN COMPLIANCE)
+     FETCH + MAP DATA USING api_call
   ======================= */
   useEffect(() => {
-    fetch("http://localhost:5000/compliance/list", {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((res) => {
+    const fetchData = async () => {
+      try {
+        const res = await api_call("/compliance/list", "GET", null, true); // using credentials
         if (res.compliances) {
           const formatted = res.compliances.map((item) => ({
             id: item.cmplst_id || "",
@@ -52,15 +48,18 @@ export default function General() {
             requestDate: item.cmplst_next_day_date || "",
             responseDate: item.cmplst_next_escalation_date || "",
           }));
-
           setData(formatted);
         }
-      })
-      .catch((err) => console.error("Error fetching compliance report:", err));
+      } catch (err) {
+        console.error("Error fetching compliance report:", err);
+      }
+    };
+
+    fetchData();
   }, []);
 
   /* =======================
-     SEARCH (UNCHANGED LOGIC)
+     SEARCH
   ======================= */
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
@@ -72,7 +71,7 @@ export default function General() {
   }, [data, searchTerm]);
 
   /* =======================
-     SORTING (UNCHANGED)
+     SORTING
   ======================= */
   const sortedData = useMemo(() => {
     let sortable = [...filteredData];
@@ -90,9 +89,7 @@ export default function General() {
 
   const requestSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
+    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
     setSortConfig({ key, direction });
   };
 
@@ -106,7 +103,7 @@ export default function General() {
   };
 
   /* =======================
-     PAGINATION (UNCHANGED)
+     PAGINATION
   ======================= */
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;

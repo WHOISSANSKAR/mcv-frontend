@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "./admin/Sidebar";
 import { useNavigate } from "react-router-dom";
 import "./admin/Dashboard.css";
+import { apiFetch } from "./api_call"; // ✅ use apiFetch
 
 export default function CompanyForm() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -14,7 +15,7 @@ export default function CompanyForm() {
     end_of_subscription: ""
   });
 
-  const [file, setFile] = useState(null); // UI only, ignored for now
+  const [file, setFile] = useState(null); // UI only
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState("");
   const navigate = useNavigate();
@@ -48,7 +49,6 @@ export default function CompanyForm() {
     setErrors({});
     setSuccessMsg("");
 
-    // Validate required fields
     if (!formData.company_name || !formData.cin) {
       setErrors({ api: "Company Name and CIN are required" });
       return;
@@ -63,30 +63,25 @@ export default function CompanyForm() {
     };
 
     try {
-      const response = await fetch("http://localhost:5000/form/submit", {
+      // ✅ replaced fetch with apiFetch
+      const data = await apiFetch("/form/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      setSuccessMsg("✅ Company details submitted successfully!");
+      setFormData({
+        company_name: "",
+        cin: "",
+        subscribers: 0,
+        subscribersInput: "0",
+        end_of_subscription: ""
+      });
+      setFile(null);
 
-      if (!response.ok) {
-        setErrors({ api: data.error || "Failed to submit form" });
-      } else {
-        setSuccessMsg("✅ Company details submitted successfully!");
-        setFormData({
-          company_name: "",
-          cin: "",
-          subscribers: 0,
-          subscribersInput: "0",
-          end_of_subscription: ""
-        });
-        setFile(null);
-      }
     } catch (err) {
       console.error("Error submitting form:", err);
-      setErrors({ api: "Failed to submit form. Please try again." });
+      setErrors({ api: err.message || "Failed to submit form. Please try again." });
     }
   };
 

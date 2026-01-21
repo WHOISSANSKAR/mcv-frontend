@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import UserHeader from "./UserHeader";
 import UserSidebar from "./UserSidebar";
-
-const API_BASE = "http://localhost:5000";
+import { apiFetch, BASE_URL } from "../api_call"; // ✅ centralized API
 
 export default function DPDPtest() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -12,27 +11,21 @@ export default function DPDPtest() {
 
   /* ================= FETCH ASSESSMENTS ================= */
   useEffect(() => {
-    fetch(`${API_BASE}/assessment/list`, {
-      method: "GET",
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setAssessments(data);
-        }
-      })
-      .catch((err) => {
+    const fetchAssessments = async () => {
+      try {
+        const data = await apiFetch("/assessment/list", { credentials: "include" });
+        if (Array.isArray(data)) setAssessments(data);
+      } catch (err) {
         console.error("Assessment API Error:", err);
-      });
+      }
+    };
+    fetchAssessments();
   }, []);
 
   /* ================= DOWNLOAD ================= */
   const handleDownload = (assessmentName) => {
     const link = document.createElement("a");
-    link.href = `${API_BASE}/assessment/download/${encodeURIComponent(
-      assessmentName
-    )}`;
+    link.href = `${BASE_URL}/assessment/download/${encodeURIComponent(assessmentName)}`;
     link.download = `${assessmentName}.csv`;
     link.click();
 
@@ -40,7 +33,7 @@ export default function DPDPtest() {
   };
 
   /* ================= UPLOAD ================= */
-  const handleFileUpload = (event, assessmentName) => {
+  const handleFileUpload = async (event, assessmentName) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -52,23 +45,24 @@ export default function DPDPtest() {
     const formData = new FormData();
     formData.append("file", file);
 
-    fetch(
-      `${API_BASE}/assessment/upload/${encodeURIComponent(assessmentName)}`,
-      {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      }
-    )
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) throw data;
-        alert(`Uploaded successfully! Score: ${data.score}%`);
-      })
-      .catch((err) => {
-        alert(err.error || "Upload failed");
-      });
+    try {
+      const res = await fetch(
+        `${BASE_URL}/assessment/upload/${encodeURIComponent(assessmentName)}`,
+        {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw data;
+      alert(`Uploaded successfully! Score: ${data.score}%`);
+    } catch (err) {
+      alert(err.error || "Upload failed");
+    }
   };
+
 
   return (
     <div

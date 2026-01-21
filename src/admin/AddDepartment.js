@@ -3,6 +3,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useNavigate, useLocation } from "react-router-dom";
 import "./Dashboard.css";
+import { apiFetch } from "../api_call"; // ✅ use unified API
 
 export default function AddDepartment() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -24,7 +25,6 @@ export default function AddDepartment() {
   const [popup, setPopup] = useState({ visible: false, value: "" });
   const [loading, setLoading] = useState(false);
 
-  // ✅ Unified error/success states like AddUser
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState("");
   const [errorVisible, setErrorVisible] = useState(false);
@@ -39,16 +39,13 @@ export default function AddDepartment() {
   const queryParams = new URLSearchParams(location.search);
   const buIdFromURL = queryParams.get("businessUnitId") || "";
 
-  // ✅ Fetch Business Units
+  // ✅ Fetch Business Units using apiFetch
   useEffect(() => {
-    if (!userId) {
-      navigate("/", { replace: true });
-      return;
-    }
+    if (!userId) return navigate("/", { replace: true });
 
-    fetch(`http://localhost:5000/user/business_unit/all?user_id=${userId}`)
-      .then((res) => res.json())
-      .then((data) => {
+    const loadBusinessUnits = async () => {
+      try {
+        const data = await apiFetch(`/user/business_unit/all?user_id=${userId}`);
         if (!Array.isArray(data)) return;
 
         setBusinessUnits(data);
@@ -58,7 +55,6 @@ export default function AddDepartment() {
 
         if (fromAddBU && data.length > 0) {
           const topBU = data[0];
-
           setBusinessUnit(topBU.business_unit_name);
           setBusinessUnitId(topBU.usrbu_id);
           return;
@@ -72,17 +68,21 @@ export default function AddDepartment() {
             setBusinessUnitLocked(true);
           }
         }
-      })
-      .catch((err) => console.error("Error fetching BU:", err));
-  }, []);
+      } catch (err) {
+        console.error("Error fetching BU:", err);
+        setErrors({ api: "Failed to fetch Business Units." });
+      }
+    };
+
+    loadBusinessUnits();
+  }, [userId, buIdFromURL, navigate]);
 
   // Clear localStorage flags after BU autofill
   useEffect(() => {
     if (businessUnit && localStorage.getItem("fromAddBU") === "true") {
-      localStorage.removeItem("fromAddBU");
-      localStorage.removeItem("customBU");
-      localStorage.removeItem("selectedBusinessUnitId");
-      localStorage.removeItem("BUpage");
+      ["fromAddBU", "customBU", "selectedBusinessUnitId", "BUpage"].forEach((key) =>
+        localStorage.removeItem(key)
+      );
     }
   }, [businessUnit]);
 
@@ -109,8 +109,7 @@ export default function AddDepartment() {
   };
 
   const handleCustomBU = () => {
-    if (businessUnitLocked) return;
-    if (!businessUnit.trim()) return;
+    if (businessUnitLocked || !businessUnit.trim()) return;
 
     const exists = businessUnits.some(
       (b) => b.business_unit_name.toLowerCase() === businessUnit.toLowerCase()
@@ -135,7 +134,7 @@ export default function AddDepartment() {
     setPopup({ visible: false, value: "" });
   };
 
-  // ✅ Submit with unified error/success
+  // ✅ Submit using apiFetch
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -160,44 +159,35 @@ export default function AddDepartment() {
     };
 
     try {
-      const response = await fetch("http://localhost:5000/user/departments/add", {
+      const data = await apiFetch("/user/departments/add", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      setSuccessMsg("✅ Department added successfully!");
+      setDepartmentName("");
 
-      if (!response.ok) {
-        setErrors({ api: data.error || "Failed to add department" });
-      } else {
-        setSuccessMsg("✅ Department added successfully!");
-        setDepartmentName("");
+      const page = localStorage.getItem("page") || "";
+      if (page === "2" || page === "3") localStorage.setItem("fromAddDept", "true");
 
-        const page = localStorage.getItem("page") || "";
-        if (page === "2" || page === "3") {
-          localStorage.setItem("fromAddDept", "true");
-        }
+      setTimeout(() => {
+        if (page === "1") navigate("/department");
+        else if (page === "2") navigate("/add-user");
+        else if (page === "3") navigate("/edit-user");
+        else navigate("/dashboard");
 
-        setTimeout(() => {
-          if (page === "1") navigate("/department");
-          else if (page === "2") navigate("/add-user");
-          else if (page === "3") navigate("/edit-user");
-          else navigate("/dashboard");
-
-          localStorage.removeItem("page");
-          localStorage.removeItem("customDept");
-        }, 900);
-      }
+        localStorage.removeItem("page");
+        localStorage.removeItem("customDept");
+      }, 900);
     } catch (err) {
       console.error(err);
-      setErrors({ api: "Failed to add department. Please try again." });
+      setErrors({ api: err.message || "Failed to add department. Please try again." });
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Auto-hide error messages
+  // Auto-hide messages
   useEffect(() => {
     if (errors.api) {
       setErrorVisible(true);
@@ -210,7 +200,6 @@ export default function AddDepartment() {
     }
   }, [errors.api]);
 
-  // ✅ Auto-hide success messages
   useEffect(() => {
     if (successMsg) {
       setSuccessVisible(true);
@@ -231,18 +220,9 @@ export default function AddDepartment() {
       <div className="form-container">
         <h2>Add Department</h2>
 
-        {/* ✅ Unified success/error messages */}
         <div className="messages-top" style={{ margin: "0 auto 1rem auto", width: "50%" }}>
-          {errors.api && (
-            <div className={`login-error ${!errorVisible ? "fade-out" : ""}`}>
-              {errors.api}
-            </div>
-          )}
-          {successMsg && (
-            <div className={`success-msg ${!successVisible ? "fade-out" : ""}`}>
-              {successMsg}
-            </div>
-          )}
+          {errors.api && <div className={`login-error ${!errorVisible ? "fade-out" : ""}`}>{errors.api}</div>}
+          {successMsg && <div className={`success-msg ${!successVisible ? "fade-out" : ""}`}>{successMsg}</div>}
         </div>
 
         <form onSubmit={handleSubmit} className="add-user-form">
@@ -265,10 +245,7 @@ export default function AddDepartment() {
               <ul className="suggestions">
                 {filteredBusinessUnits.length > 0 ? (
                   filteredBusinessUnits.map((unit) => (
-                    <li
-                      key={unit.usrbu_id}
-                      onMouseDown={() => handleSuggestionClick(unit)}
-                    >
+                    <li key={unit.usrbu_id} onMouseDown={() => handleSuggestionClick(unit)}>
                       {unit.business_unit_name}
                     </li>
                   ))

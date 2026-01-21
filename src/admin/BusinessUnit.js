@@ -4,6 +4,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
+import { apiFetch } from "../api_call"; // ✅ use apiFetch
 
 export default function BusinessUnit() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -36,16 +37,8 @@ export default function BusinessUnit() {
 
     const fetchData = async () => {
       try {
-        const res = await fetch(
-          `http://localhost:5000/user/business_unit/all?user_id=${user.usrlst_id}`
-        );
-
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`API error ${res.status} - ${text}`);
-        }
-
-        const result = await res.json();
+        // ✅ replaced fetch with apiFetch
+        const result = await apiFetch(`/user/business_unit/all?user_id=${user.usrlst_id}`);
 
         if (!result || result.error || result.message === "No business units found") {
           setErrorMsg("No Business Units found.");

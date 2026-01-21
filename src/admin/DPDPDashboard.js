@@ -11,23 +11,24 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-
+import { apiFetch } from "../api_call";
 export default function AssessmentDashboard() {
   const [overallScore, setOverallScore] = useState(null);
 
   // Fetch overall assessment score
-  useEffect(() => {
-    fetch("http://localhost:5000/assessment/overall-score", {
-      method: "GET",
-      credentials: "include",
-    })
-      .then(res => res.json())
-      .then(data => {
+ useEffect(() => {
+    const fetchScore = async () => {
+      try {
+        const data = await apiFetch("/assessment/overall-score");
         if (data.overall_score !== undefined && data.overall_score !== null) {
           setOverallScore(Math.round(data.overall_score));
         }
-      })
-      .catch(err => console.error("Error fetching overall score:", err));
+      } catch (err) {
+        console.error("Error fetching overall score:", err);
+      }
+    };
+
+    fetchScore();
   }, []);
 
   const regulationData = [
