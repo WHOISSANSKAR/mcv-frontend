@@ -89,9 +89,16 @@ const LoginPage = ({ setIsLoggedIn }) => {
 
   // Auto-login if saved
   useEffect(() => {
-    const savedLogin = localStorage.getItem("isLoggedIn");
-    if (savedLogin === "true") setIsLoggedIn(true);
-  }, [setIsLoggedIn]);
+  const token = localStorage.getItem("token");
+  const user = localStorage.getItem("user");
+
+  if (token && user && user !== "undefined") {
+    setIsLoggedIn(true);
+  } else {
+    localStorage.removeItem("isLoggedIn");
+  }
+}, [setIsLoggedIn]);
+
 
   // ✅ UPDATED LOGIN METHOD for new API + your paths
   const handleSubmit = async (e) => {
@@ -112,14 +119,13 @@ const LoginPage = ({ setIsLoggedIn }) => {
       body: JSON.stringify({ email, password }),
     });
 
-    // ✅ SAVE JWT TOKEN
-    localStorage.setItem("token", data.token);
+    if (!data?.token || !data?.user) {
+  throw new Error("Invalid login response");
+}
 
-    // ✅ SAVE USER INFO
-    localStorage.setItem("user", JSON.stringify(data.user));
-
-    // ✅ LOGIN FLAG
-    localStorage.setItem("isLoggedIn", "true");
+localStorage.setItem("token", data.token);
+localStorage.setItem("user", JSON.stringify(data.user));
+localStorage.setItem("isLoggedIn", "true");
 
     // ✅ UPDATE APP STATE
     setIsLoggedIn(true);

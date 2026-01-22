@@ -4,7 +4,7 @@ import UserSidebar from "./UserSidebar";
 import UserHeader from "./UserHeader";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
-import { api_call } from "./api_call"; // <--- import your api_call.js
+import { apiFetch } from "../api_call"; // <--- import your api_call.js
 
 export default function General() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -30,7 +30,7 @@ export default function General() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await api_call("/compliance/list", "GET", null, true); // using credentials
+        const res = await apiFetch("/compliance/list", "GET", null, true); // using credentials
         if (res.compliances) {
           const formatted = res.compliances.map((item) => ({
             id: item.cmplst_id || "",
